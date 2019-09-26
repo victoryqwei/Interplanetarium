@@ -1,0 +1,69 @@
+
+<!--Interplanetary
+Created by Victor Wei and Evan Cowan-->
+
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset=utf-8>
+		<title>Interplanetarium</title>
+		<link rel="icon" href="favicon.png">
+		<style>
+			body { margin: 0; overflow: hidden}
+			canvas {
+				border: solid black 1px;
+				z-index: 0;
+			}
+
+			#feedback-container {
+				position: absolute;
+				z-index: 1;
+				bottom: 0;
+				width: 100%;
+				text-align: right;
+				padding-bottom: 5px;
+			}
+
+			#feedback-link {
+				color: white;
+				font-family: Arial;
+				padding-right: 5px;
+				padding-left: 5px;
+			}
+		</style>	
+	</head>
+	<body oncontextmenu="return false;">
+		<canvas id="canvas"></canvas>
+
+		<div style="width: 100%; height: 10px; position: absolute; top: 50%; display: none; z-index: 1;" id="options-container">
+			<div class="slidecontainer" style="position: relative; margin-right:auto; margin-left: auto; float: center; width: 200px;">
+			  <input type="range" min="1" max="100" value="50" class="slider" id="interfaceScale" style="position: relative; float: center; width: 200px;">
+			</div>
+		</div>
+
+		<div id="feedback-container" style="text-align: left;">
+			<a id="feedback-link">Created by Victor Wei and Evan Cowan</a>
+		</div>
+		<div id="feedback-container">
+			<a id="feedback-link" target="_blank" href="https://discord.gg/uKYXPeA">Click here to join our discord server to give suggestions and feedback!</a>
+		</div>
+		
+
+		<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+		<script src="javascripts/socket.io.js"></script>
+		<script src="javascripts/helper.js"></script>
+		<script src="javascripts/classes/Vector.js"></script>
+		<script src="javascripts/classes/Rocket.js"></script>
+		<script src="javascripts/classes/Planet.js"></script>
+		<script src="javascripts/classes/Drill.js"></script>
+		<script src="javascripts/classes/Resource.js"></script>
+		<script src="javascripts/classes/Star.js"></script>
+		<script src="javascripts/classes/Stats.js"></script>
+		<script src="javascripts/draw.js"></script>
+		<script src="javascripts/interface.js"></script>
+
+		<script src="javascripts/init.js"></script>
+		<script src="javascripts/event.js"></script>
+		<script src="javascripts/main.js"></script>
+	</body>
+</html>
