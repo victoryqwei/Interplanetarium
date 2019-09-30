@@ -51,12 +51,13 @@ rl.on('line', (input) => {
 });
 
 var servers = [];
+let serverUpdateRate = 20;
 let maxPlayers = 10;
 
 class Server {
 	constructor() {
 		this.players = {}; // Players are selected based on their socket id
-		this.map = new Map();	
+		this.map = new Map(200);
 		this.id = Function.randomString(10);
 	}
 
@@ -66,41 +67,63 @@ class Server {
 
 	update() {
 		for (let id in this.players) {
+			this.harvestPlanets(this.players[id]);
+		}
+
+		for (let id in this.players) {
 			if (io.sockets.connected[id])
-				io.sockets.connected[id].emit('update', this.players);
+				io.sockets.connected[id].emit('update', this);
+		}
+	}
+
+	harvestPlanets(rocket) {
+		let delta = serverUpdateRate;
+		let planets = this.map.planets;
+		for (let id in planets) {
+			let p = planets[id];
+			if (Function.circleCollidesRect(p, rocket)) {
+
+				// Mine resources
+				if (p.resource.amount > 0 && p.resource.type != "None") {
+					// Decrease resource on planet and increase resource gained from player
+					console.log("onPlanet")
+					p.resource.amount = Math.max(
+						p.resource.amount-rocket.miningSpeed*delta,
+						0
+					);
+					let resourceType = p.resource.type;
+					rocket.resources[resourceType] = Math.max(
+						rocket.resources[resourceType]+rocket.miningSpeed*delta,
+						0
+					);
+
+					io.emit('console', p.resource.amount);
+
+					// Change planet properties
+					/*let lastRadius = p.radius;
+					p.radius = p.maxRadius * (p.resource.amount/p.resource.totalAmount);
+					p.mass = p.maxMass * (Math.pow(p.radius, 2)/Math.pow(p.maxRadius, 2));*/
+
+					// Change player position to new planet radius
+
+					// We don't have to do this yet
+
+					/*let deltaRadius = lastRadius-p.radius;
+					let deltaPos = new Vector(0, 1);
+					deltaPos = Vector.rotate(deltaPos, rocket.angle+Math.PI/2);
+					deltaPos.mult(deltaRadius);
+					rocket.pos.add(deltaPos);*/
+				}
+			}
 		}
 	}
 };
 
-function optimizeServer() {
-
-	if(servers.length > 1) {
-
-		var currentServers = servers.slice();
-		var desirableServers = [];
-
-		for (let i = 0; i < currentServers.length; i++) {
-			let players = 1;
-			for(let j = 0; j < currentServers.length; j++) {
-				let s = currentServers[j];
-				if(Object.keys(s.players).length > players && Object.keys(s.players).length < 10) {
-					players = Object.keys(s.players).length;
-					desirableServers.push(s);
-					currentServers.splice(j, 1);
-				}
-			}
-		}
-
-		for (let i = 0; i < servers.length; i++) {
-			if(Object.keys(servers[i].players).length == 1 && desirableServers.length > 0) {
-				console.log("Wanting to switch player " + Object.keys(servers[i].players)[0] + " to server " + desirableServers[desirableServers.length-1].id + " with " + Object.keys((desirableServers[desirableServers.length-1]).players).length + " players");
-			}
-		}
-	}
-}
+servers.push(new Server());
 
 function findServer() {
-	// Connect to server - MAKE THIS INTO A FUNCTION
+
+	// Connect to server
 	let foundServer = false;
 	for(let s of servers) {
 		if(Object.keys(s.players).length < maxPlayers) {
@@ -109,19 +132,56 @@ function findServer() {
 		}
 	}
 
+	//If no servers avaliable, create new sever
 	if(!foundServer) {
 		servers.push(new Server());
 		return servers[servers.length-1];
 	}
-
-	console.log(servers.length);
 }
 
-servers.push(new Server());
+function optimizeServers() {
 
+	// Optimize if there is more than one server
+	if(servers.length > 1) {
+
+		var currentServers = servers.concat();
+		var desirableServers = [];
+
+		// Find most desirable servers to play on
+		for (let i = 0; i < currentServers.length; i++) {
+			var players = 1;
+			var bestServer = undefined;
+			for(let j = 0; j < currentServers.length; j++) {
+				if(Object.keys(currentServers[j].players).length > players && Object.keys(currentServers[j].players).length < maxPlayers) {
+					players = Object.keys(currentServers[j].players).length;
+					bestServer = j;
+				}
+			}
+			if(currentServers[bestServer] != null) {
+				desirableServers.push(currentServers[bestServer]);
+				currentServers.splice(bestServer, 1);
+			}
+		}
+
+		// Switch players to better servers
+		for (let i = 0; i < servers.length; i++) {
+			if(Object.keys(servers[i].players).length == 1 && desirableServers.length > 0) {
+				io.emit('console', ("Wanting to switch player " + Object.keys(servers[i].players)[0] + " to server " + desirableServers[desirableServers.length-1].id + " with " + Object.keys((desirableServers[desirableServers.length-1]).players).length + " players"));
+			}
+		}
+
+		// Remove servers with no people
+		for (let i = 0; i < servers.length; i++) {
+			if(Object.keys(servers[i].players).length == 0) {
+				servers.splice(i, 1);
+			}
+		}
+
+	}
+}
 
 // Server-client connection architecture
-io.on('connection', function(socket) { 
+io.on('connection', function(socket) {
 	// Find a server
 	let server = findServer();
 	server.addPlayer(socket.id);
@@ -130,9 +190,22 @@ io.on('connection', function(socket) {
 
 	socket.emit('init', server); // Send initial data
 
+	let timeoutId;
+
 	socket.on('data', function (data) {
+		let player = server.players[socket.id];
+
+		// Update new data
 		server.players[socket.id] = data;
-		//console.log(data.pos);
+
+		// Afk timeout (no input from player)
+
+		// Disconnect fallback (if player fails to send update)
+		clearTimeout(timeoutId);
+		timeoutId = setTimeout(function () {
+			delete server.players[socket.id];
+			console.log(socket.id + " left at "  + Date());
+		}, 5000);
 	})
 
 	socket.on('disconnect', function () {
@@ -140,6 +213,7 @@ io.on('connection', function(socket) {
 		delete server.players[socket.id];
 		console.log(socket.id + " left at "  + Date());
 	});
+
 });
 
 setInterval(function(){
@@ -148,8 +222,10 @@ for (let s of servers) {
 	s.update();
 }
 
-optimizeServer();
+}, 1000/serverUpdateRate);
 
-}, 100);
+/*setInterval(function () {
+	optimizeServers();
+}, 5000);*/
 
 module.exports = app;

@@ -46,64 +46,21 @@ function drawRespawn() {
 			text = "You crashed!";
 		else if (rocket.goodLanding === false)
 			text = "You flipped over!";
-		
 
-		drawTitle(text, "Press R to respawn", true);
+
+		ui.drawTitle(text, "Press R to respawn", true);
 	}
 }
 
+// Display other players
 function displayPlayers() {
 	for (let id in server.players) {
-		if (id != socket.id) {
-			let p = server.players[id];
+		let serverRocket = server.players[id];
+		if (id != socket.id && serverRocket.interpolated && inScreen(serverRocket.interpolated, 1, 20)) {
+			serverRocket.pos = new Vector(serverRocket.interpolated.x, serverRocket.interpolated.y);
+			serverRocket.angle = serverRocket.interpolated.angle;
 
-			let screenPos = getScreenPos(p.pos, display.zoom);
-			
-			// Draw the rocket - WITH AN ACTUAL NOSE CONE AND WINDOW YOU LITTLE
-			let width = p.width * display.zoom;
-			let height = p.height * display.zoom;
-
-			// Draw body
-			ctx.save();
-			drawRect(screenPos.x, screenPos.y, width, height, p.angle, "#d3d3d3")
-			ctx.restore();
-
-			var options = {
-				alpha: 1
-			}
-
-			// Draw nose cone
-			ctx.beginPath();
-			ctx.save();
-			ctx.translate(screenPos.x, screenPos.y);
-			ctx.rotate(p.angle);
-		    ctx.moveTo(-width/2, -height/2);
-		    ctx.lineTo(width/2, -height/2);
-		    ctx.lineTo(0, -23*display.zoom);
-		    ctx.fillStyle = "red";
-		    ctx.fill();
-		    ctx.restore();
-		    ctx.closePath();
-
-			// Draw rocket window
-			ctx.save();
-			ctx.translate(screenPos.x, screenPos.y);
-			ctx.rotate(p.angle);
-			drawRoundedRect(0-width/4, -width, width/2, width, 3*display.zoom, "rgb(70, 70, 70)", options)
-			ctx.restore();
-
-			// Draw thrusters
-			ctx.save();
-			ctx.translate(screenPos.x, screenPos.y);
-			ctx.rotate(p.angle);
-			drawRect(-width/2, height/2, width/2, width, 0, "red")
-			ctx.restore();
-
-			ctx.save();
-			ctx.translate(screenPos.x, screenPos.y);
-			ctx.rotate(p.angle);
-			drawRect(width/2, height/2, width/2, width, 0, "red")
-			ctx.restore();
-		}	
+			Rocket.display(serverRocket, true, true);
+		}
 	}
 }

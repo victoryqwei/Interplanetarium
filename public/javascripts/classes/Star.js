@@ -15,20 +15,19 @@ class Star {
 			var distance = Infinity;
 			var planetIndex = 0;
 
-			// Why is this not optimized USE 
-
 			// Find closest planet to star
-			for (var i = 0; i < planets.length; i++) {
-				if(planets[i].type == "Black Hole") {	
-					if(getDistance(planets[i].pos.x*zoom - rocket.pos.x*zoom + canvas.width/2,
-					planets[i].pos.y*zoom - rocket.pos.y*zoom + canvas.height/2,
+			for (let id in planets) {
+				let p = planets[id];
+				if(p.type == "Black Hole") {	
+					if(getDistance(p.pos.x*zoom - rocket.pos.x*zoom + canvas.width/2,
+					p.pos.y*zoom - rocket.pos.y*zoom + canvas.height/2,
 					this.pos.x*zoom - rocket.pos.x*zoom / starDistance + canvas.width/2, 
 					this.pos.y*zoom - rocket.pos.y*zoom / starDistance + canvas.height/2) < distance) {
-						distance = getDistance(planets[i].pos.x*zoom - rocket.pos.x*zoom + canvas.width/2,
-						planets[i].pos.y*zoom - rocket.pos.y*zoom + canvas.height/2,
+						distance = getDistance(p.pos.x*zoom - rocket.pos.x*zoom + canvas.width/2,
+						p.pos.y*zoom - rocket.pos.y*zoom + canvas.height/2,
 						this.pos.x*zoom - rocket.pos.x*zoom / starDistance + canvas.width/2, 
 						this.pos.y*zoom - rocket.pos.y*zoom / starDistance + canvas.height/2);
-					planetIndex = i;
+					planetIndex = id;
 					}
 				}
 			}

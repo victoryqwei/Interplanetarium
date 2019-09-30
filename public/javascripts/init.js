@@ -41,12 +41,6 @@ let display = {
 var interfaceSlider = document.getElementById("interfaceScale");
 interfaceSlider.value = display.interfaceScale * 50;
 
-// Map width
-var map = {
-	width: 20000,
-	height: 20000
-}
-
 let rocket, planets, stars;
 planets = stars = [];
 
@@ -54,7 +48,7 @@ let stats;
 
 // Create smoke image
 var smoke = new Image();
-smoke.src = "https://www.blog.jonnycornwell.com/wp-content/uploads/2012/07/Smoke10.png";
+smoke.src = "smoke.png";
 
 var resourceTypes = ["Iron", "Copper", "Lead", "Kanium"];
 

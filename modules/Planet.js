@@ -1,5 +1,6 @@
 var Vector = require('./Vector.js');
 var Resource = require('./Resource.js');
+var Function = require('./Function.js');
 
 module.exports = class Planet {
 	constructor(x, y, mass, radius, type, name = "Planet", color = "#c1440e", strokeColor) {

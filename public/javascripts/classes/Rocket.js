@@ -25,21 +25,25 @@ class Rocket {
 		this.fuel = 0;
 		this.oxygen = 0;
 
-		this.crashed = false;
+		// Resource inventory
+		this.resources = {Iron: 0, Copper: 0, Kanium: 0, Lead: 0};
 
 		// Extra data
 		this.closestPlanetDistance = 0;
 		this.closestPlanet = undefined;
 
-		this.resources = {Iron: 0, Copper: 0, Kanium: 0, Lead: 0};
+		this.crashed = false;
 
+		this.t = Date.now();
+
+		// Set config
 		let config = {
 			width: width,
 			height: height
 		}
-
 		this.setConfig(config);
 
+		// Particles
 		this.particlesMax = 200;
 		this.particles = [];
 
@@ -78,7 +82,7 @@ class Rocket {
 		this.miningSpeed = cfg.miningSpeed || 0.01;
 	}
 
-	input() {	
+	input() {
 		// Respawn
 		if (keys[82]) { // R
 			if (this.crashed || this.fuel <= 0 || this.oxygen <= 0) {
@@ -95,7 +99,7 @@ class Rocket {
 				this.thrustToggle = true;
 				this.thrustSelect = !this.thrustSelect;
 			}
-		
+
 		} else {
 			if (this.thrustToggle) {
 				this.thrustToggle = false;
@@ -116,7 +120,7 @@ class Rocket {
 			}
 
 			// Check if there's still fuel
-			if (this.fuel > 0 ) {
+			if (this.fuel > 0 && !this.crashed) {
 				// Thrust
 				if (keys[38] || keys[87]) {
 					this.thrust = Math.min(this.maxThrust, this.thrust + this.thrustSpeed * delta / 16);
@@ -135,10 +139,6 @@ class Rocket {
 				this.thrust = 0;
 			}
 		}
-
-		if(this.thrst <= 0) {
-			this.thrust = 0;
-		}
 	}
 
 	attract(planet) {
@@ -148,7 +148,7 @@ class Rocket {
 	    var distance = force.getMag();
 
 	    force.normalize();
-	 
+
 	    var strength = (1 * this.mass * planet.mass) / (distance * distance);
 	    force.mult(strength);
 
@@ -158,14 +158,15 @@ class Rocket {
     getClosestPlanet(planets) {
     	// Get the closest planet from the rocket
     	let closestDistance = Infinity;
-    	for (let p of planets) {
+    	for (let id in planets) {
+    		let p = planets[id];
     		if (dist(p.pos, this.pos)-p.radius < closestDistance) {
     			closestDistance = dist(p.pos, this.pos) - p.radius - this.height/2;
     			this.angleFromPlanet = Math.atan2(p.pos.y-this.pos.y, p.pos.x-this.pos.x)/Math.PI*180;
     			this.closestPlanet = p;
     		}
     	}
-    	
+
     	return closestDistance;
     }
 
@@ -184,10 +185,11 @@ class Rocket {
 
 		// Gravitational force
 		let gravForce = new Vector();
-		for (let p of planets) {
+		for (let id in planets) {
+			let p = planets[id];
 			gravForce.add(this.attract(p));
 		}
-		this.gForce = gravForce.getMag();
+		this.gForce = gravForce.getMag()/433;
 
 		let netForce = thrustForce.copy();
 		netForce.add(gravForce);
@@ -202,12 +204,9 @@ class Rocket {
 			this.vel.normalize();
 			this.vel.mult(this.maxSpeed);
 		}
- 
+
 		// New position
 		this.pos.add(Vector.mult(this.vel, delta/1000));
-
-		// Extra data
-		this.closestPlanetDistance = Math.max(0, this.getClosestPlanet(planets));
 	}
 
 	updateEssentials() {
@@ -228,10 +227,27 @@ class Rocket {
 		}
 	}
 
+	harvest(p, angle) {
+
+		// Change planet properties
+		let lastRadius = p.radius;
+		p.radius = p.maxRadius * (p.resource.amount/p.resource.totalAmount);
+		p.mass = p.maxMass * (Math.pow(p.radius, 2)/Math.pow(p.maxRadius, 2));
+		p.color = pSBC(-(1-(p.resource.amount/p.resource.totalAmount)), p.maxColor, false, true)
+		p.strokeColor = pSBC(-(1-(p.resource.amount/p.resource.totalAmount)), p.maxStrokeColor, false, true)
+
+		// Change player position to new planet radius
+		let deltaRadius = lastRadius-p.radius;
+		let deltaPos = new Vector(0, 1);
+		deltaPos = Vector.rotate(deltaPos, angle+Math.PI/2);
+		deltaPos.mult(deltaRadius);
+		this.pos.add(deltaPos);
+	}
+
 	collision() {
 		this.onPlanet = false;
-		for (let i = 0; i < planets.length; i++) {
-			let p = planets[i];
+		for (let id in planets) {
+			let p = planets[id];
 
 			if (circleCollidesRect(p, this)) {
 				// Crash detection
@@ -262,10 +278,10 @@ class Rocket {
 					this.pos.y += displacement.y;
 				}
 
-				if (this.speed > this.landingSpeed || !this.goodLanding) { 
+				if (this.speed > this.landingSpeed || !this.goodLanding) {
 					// High velocity or wrong landing
 					this.crashed = true;
-				} else { 
+				} else {
 					// Proper landing
 					this.fuel = constrain(this.fuel + delta * 10, 0, this.maxFuel);
 					this.angle = angle+Math.PI/2;
@@ -273,56 +289,33 @@ class Rocket {
 
 					// Mine resources
 					if (p.resource.amount > 0 && p.resource.type != "None") {
-						// Decrease resource on planet and increase resource gained from player
-						p.resource.amount = Math.max(
-							p.resource.amount-this.miningSpeed*delta, 
-							0
-						);
-						let resourceType = p.resource.type;
-						rocket.resources[resourceType] = Math.max(
-							rocket.resources[resourceType]+this.miningSpeed*delta, 
-							0
-						);
-
-						// Change planet properties
-						let lastRadius = p.radius;
-						p.radius = p.maxRadius * (p.resource.amount/p.resource.totalAmount);
-						p.mass = p.maxMass * (Math.pow(p.radius, 2)/Math.pow(p.maxRadius, 2));
-						p.color = pSBC(-(1-(p.resource.amount/p.resource.totalAmount)), p.maxColor, false, true)
-						p.strokeColor = pSBC(-(1-(p.resource.amount/p.resource.totalAmount)), p.maxStrokeColor, false, true)
-
-						// Change player position to new planet radius
-						let deltaRadius = lastRadius-p.radius;
-						let deltaPos = new Vector(0, 1);
-						deltaPos = Vector.rotate(deltaPos, angle+Math.PI/2);
-						deltaPos.mult(deltaRadius);
-						this.pos.add(deltaPos);
+						this.harvest(p, angle);
 					}
 				}
 
-				//Preview welcome 
+				//Preview welcome
 				if(!this.welcome && !this.crashed) {
-					animateTitle(
+					ui.animateTitle(
 						"Welcome to " + p.name,
 						"You have landed, you can now mine and refuel.",
-						3000
+						3000,
+						function () {
+							ui.onTitle = false;
+							ui.titleText = "";
+							ui.descriptorText = "";
+						}
 					);
-				}			
+				}
 			}
 
 			// Destroy when planet becomes too small
 			if(p.mass < 10000) {
 				p.resource.amount = p.resource.amount-0.05*delta;
 			}
-
-			// When resources of the planet are depleted, destroy the planet
-			if(p.resource.amount <= 0) {
-				planets.splice(i, 1);
-			}
 		}
 
 		//Change welcome value
-		if(this.onPlanet == true) {
+		if(this.onPlanet) {
 			this.welcome = true;
 		} else if(this.closestPlanetDistance > this.closestPlanet.radius + 10) {
 			this.welcome = false;
@@ -346,10 +339,6 @@ class Rocket {
 		this.fuel = this.maxFuel;
 		this.oxygen = this.maxOxygen;
 
-		for (var i = 0; i < planets.length; i++) {
-			planets[i].resource.amount = planets[i].resource.totalAmount;
-		}
-
 		for (var i = 0; i < resourceTypes.length; i++) {
 			rocket.resources[resourceTypes[i]] = 0;
 		}
@@ -358,18 +347,15 @@ class Rocket {
 	update() {
 		this.input();
 
-		if (!this.crashed && planets.length > 0) {
+		if (!this.crashed && Object.keys(planets).length > 0) {
+			// Extra data
+			this.closestPlanetDistance = Math.max(0, this.getClosestPlanet(planets));
+
 			this.move();
 			this.updateEssentials();
 			this.addParticles();
 			this.collision();
-
-			this.toServer(); // Send data to server
 		}
-	}
-
-	toServer() {
-		socket.emit('data', this);
 	}
 
 	addParticles() {
@@ -403,7 +389,7 @@ class Rocket {
 				let fireOffset = this.width/3;
 
 				let smokeParticle = new Vector(
-					randomPoint.x+random(smokeOffset, -smokeOffset), 
+					randomPoint.x+random(smokeOffset, -smokeOffset),
 					randomPoint.y+random(smokeOffset, -smokeOffset)
 				);
 
@@ -448,7 +434,7 @@ class Rocket {
 				let fireOffset = this.width/3;
 
 				let smokeParticle = new Vector(
-					randomPoint.x+random(smokeOffset, -smokeOffset), 
+					randomPoint.x+random(smokeOffset, -smokeOffset),
 					randomPoint.y+random(smokeOffset, -smokeOffset)
 				);
 
@@ -470,52 +456,75 @@ class Rocket {
 		}
 	}
 
-	drawParticles() {
+	static drawParticles(player, serverRocket) {
 		let zoom = display.zoom;
-		let size = this.width;
+		let size = player.width;
+
+		let pos = new Vector(canvas.width/2, canvas.height/2);
+		if (serverRocket) {
+			pos = getScreenPos(player.pos, display.zoom);
+			pos.add(new Vector(rocket.pos.x*display.zoom, rocket.pos.y*display.zoom));
+		}
+
 		let smokeDuration = 1000;
 		let fireDuration = 100;
-		for (let i = 0; i < this.particles.length; i++) {
-			let p = this.particles[i];
+		for (let i = 0; i < player.particles.length; i++) {
+			let p = player.particles[i];
 
 	        if (smoke) {
-	        	if (p.type == "smoke") {
-	        		size = this.width * random(0.5, 0.8);
+	        	if (p.type == "smoke" && inScreen(p, 1, 20)) {
+	        		size = player.width * random(0.5, 0.8);
 		        	ctx.globalAlpha = constrain(1-(Date.now()-p.time)/smokeDuration, 0, 1);
-		            ctx.drawImage(smoke, p.x*zoom-this.pos.x*zoom+canvas.width/2-size/2*zoom, p.y*zoom-this.pos.y*zoom+canvas.height/2-size/2*zoom, size*zoom, size*zoom);    
-	        	} else if (p.type == "fire") {
+							let particle = getScreenPos(p, zoom);
+		            ctx.drawImage(smoke,
+									particle.x,
+									particle.y,
+		            	size*zoom,
+		            	size*zoom
+		            );
+	        	} else if (p.type == "fire" && inScreen(p, 1, 20)) {
 	        		size = 3*zoom;
 	        		ctx.globalAlpha = constrain(1-(Date.now()-p.time)/fireDuration, 0, 1);
-	        		drawRect(p.x*zoom-this.pos.x*zoom+canvas.width/2, p.y*zoom-this.pos.y*zoom+canvas.height/2-size/2*zoom, size, size, 0,"orange");
+							let particle = getScreenPos(p, zoom);
+	        		drawRect(
+								particle.x,
+								particle.y,
+	        			size, size,
+	        			0,"orange"
+	        		);
 	        	}
-		        	
+
 	            ctx.globalAlpha = 1;
 	            continue;
 	        }
 		}
 
 		// Remove old particles
-		for (let i = 0; i < this.particles.length; i++) {
-			if (this.particles[i].type == "smoke" && Date.now()-this.particles[i].time > smokeDuration) {
-	        	this.particles.splice(i, 1);
-	        } else if (this.particles[i].type == "fire" && Date.now()-this.particles[i].time > fireDuration) {
-	        	this.particles.splice(i, 1);
+		for (let i = 0; i < rocket.particles.length; i++) {
+			if (rocket.particles[i].type == "smoke" && Date.now()-rocket.particles[i].time > smokeDuration) {
+	        	rocket.particles.splice(i, 1);
+	        } else if (rocket.particles[i].type == "fire" && Date.now()-rocket.particles[i].time > fireDuration) {
+	        	rocket.particles.splice(i, 1);
 	        }
 		}
 	}
 
-	display() {
+	static display(player, serverRocket, showParticles) {
+		// Draw the player
+		let width = player.width * display.zoom;
+		let height = player.height * display.zoom;
 
-		// Draw the rocket - WITH AN ACTUAL NOSE CONE AND WINDOW YOU LITTLE
-		let width = this.width * display.zoom;
-		let height = this.height * display.zoom;
+		let pos = new Vector(canvas.width/2, canvas.height/2);
+		if (serverRocket)
+			pos = getScreenPos(player.pos, display.zoom);
 
-		// Draw particles
-		this.drawParticles();
+		// Draw particle
+		if (showParticles)
+			Rocket.drawParticles(player, serverRocket);
 
 		// Draw body
 		ctx.save();
-		drawRect(canvas.width/2, canvas.height/2, width, height, this.angle, "#d3d3d3")
+		drawRect(pos.x, pos.y, width, height, player.angle, "#d3d3d3")
 		ctx.restore();
 
 		var options = {
@@ -525,8 +534,8 @@ class Rocket {
 		// Draw nose cone
 		ctx.beginPath();
 		ctx.save();
-		ctx.translate(canvas.width/2, canvas.height/2);
-		ctx.rotate(this.angle);
+		ctx.translate(pos.x, pos.y);
+		ctx.rotate(player.angle);
 	    ctx.moveTo(-width/2, -height/2);
 	    ctx.lineTo(width/2, -height/2);
 	    ctx.lineTo(0, -23*display.zoom);
@@ -535,32 +544,32 @@ class Rocket {
 	    ctx.restore();
 	    ctx.closePath();
 
-		// Draw rocket window
+		// Draw player window
 		ctx.save();
-		ctx.translate(canvas.width/2, canvas.height/2);
-		ctx.rotate(this.angle);
+		ctx.translate(pos.x, pos.y);
+		ctx.rotate(player.angle);
 		drawRoundedRect(0-width/4, -width, width/2, width, 3*display.zoom, "rgb(70, 70, 70)", options)
 		ctx.restore();
 
 		// Draw thrusters
 		ctx.save();
-		ctx.translate(canvas.width/2, canvas.height/2);
-		ctx.rotate(this.angle);
+		ctx.translate(pos.x, pos.y);
+		ctx.rotate(player.angle);
 		drawRect(-width/2, height/2, width/2, width, 0, "red")
 		ctx.restore();
 
 		ctx.save();
-		ctx.translate(canvas.width/2, canvas.height/2);
-		ctx.rotate(this.angle);
+		ctx.translate(pos.x, pos.y);
+		ctx.rotate(player.angle);
 		drawRect(width/2, height/2, width/2, width, 0, "red")
 		ctx.restore();
 
 		// Draw velocity
-		let velocityDir = this.vel.copy();
+		let velocityDir = new Vector(player.vel.x, player.vel.y);
 		velocityDir.normalize();
 		velocityDir.mult(20);
 		if(display.advanced) {
-			drawArrow(canvas.width/2, canvas.height/2, canvas.width/2 + velocityDir.x, canvas.height/2 + velocityDir.y, 2, "lime");
+			drawArrow(pos.x, pos.y, pos.x + velocityDir.x, pos.y + velocityDir.y, 2, "lime");
 		}
 	}
 }

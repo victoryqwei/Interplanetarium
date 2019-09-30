@@ -35,10 +35,16 @@ module.exports = class Rocket {
 
 		this.resources = {Iron: 0, Copper: 0, Kanium: 0, Lead: 0};
 
+		this.t = Date.now();
+
 		let config = {
 			width: width,
 			height: height
 		}
+
+		// Particles
+		this.particlesMax = 200;
+		this.particles = [];
 
 		this.setConfig(config);
 
@@ -51,8 +57,8 @@ module.exports = class Rocket {
 	setConfig(cfg) {
 		if (!cfg) cfg = {};
 
-		this.height = cfg.height || 80;
-		this.width = cfg.width || 20;
+		this.height = cfg.height || 27;
+		this.width = cfg.width || 10;
 
 		this.maxSpeed = cfg.maxSpeed || Infinity;
 		this.landingSpeed = cfg.landingSpeed || 250;

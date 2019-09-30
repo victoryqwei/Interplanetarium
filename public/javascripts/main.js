@@ -3,6 +3,8 @@ function setup() {
 	// Define rocket
 	rocket = new Rocket(0, 0, 23000, 10, 27);
 
+	ui = new Interface();
+
     // Add stars
     stars = [];
 
@@ -16,6 +18,13 @@ function setup() {
     console.log("Created by Victor Wei and Evan Cowan");
     console.log("#KM");
     console.log("Join our discord server to give suggestions or feedback (in-game perks included): https://discord.gg/uKYXPeA");
+
+    setInterval(function(){
+	    if (server) {
+			rocket.t = Date.now();
+			socket.emit('data', rocket);
+		}
+	}, 50);
 }
 
 function update() {
@@ -38,18 +47,24 @@ function draw() {
 		s.display();
 	}
 
-	for (let p of planets) {
+	for (let id in planets) {
+		let p = planets[id];
+
 		p.display();
 		p.drawMarker();
 	}
 
-	rocket.display();
+	Rocket.display(rocket, true, true);
 
-	displayPlayers();
+	// Server display
+	if (server) {
+		displayPlayers();
+	}
+
 
 	ctx.restore();
 
-	drawInterface();
+	ui.drawInterface();
 	drawRespawn(); // Death screen
 
 	if(display.advanced) {
@@ -63,7 +78,7 @@ function draw() {
 
 var keys = {};
 onkeydown = onkeyup = function(e){
-    e = e || event; 
+    e = e || event;
     keys[e.keyCode] = e.type == 'keydown';
 }
 
@@ -92,14 +107,14 @@ var then = Date.now();
 var interval = 1000/fps;
 var delta;
 var fpsArray = [];
-var averageArray;
+var averageFps;
 
 function loop(showFPS, callback) {
     requestAnimationFrame(loop);
-       
+
     now = Date.now();
     delta = now - then;
-       
+
     if (delta > interval) {
         then = now - (delta % interval);
 
@@ -108,7 +123,7 @@ function loop(showFPS, callback) {
         draw();
 
     	// Get average frames per second with a 30 frame buffer
-          
+
         fpsArray.push(1000/delta);
         if (fpsArray.length > 30) {
             fpsArray.shift();

@@ -1,5 +1,5 @@
 class Planet {
-	constructor(x, y, mass, radius, type, name, color, strokeColor, resource) {
+	constructor(x, y, mass, radius, type, name, color, strokeColor, resource, id) {
 		this.pos = new Vector(x, y);
 
 		this.mass = mass;
@@ -11,6 +11,8 @@ class Planet {
 		this.name = name;
 		this.type = type;
 		this.resource = resource;
+		this.id = id;
+
 		this.oxygen = true;	
 		this.color = color;
 		this.maxColor = color;
