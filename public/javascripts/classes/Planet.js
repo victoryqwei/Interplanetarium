@@ -18,13 +18,19 @@ class Planet {
 		this.maxColor = color;
 		this.strokeColor = strokeColor || pSBC(-0.2, this.color, false, true);
 		this.maxStrokeColor = this.strokeColor;
+
+		this.danger = 0;
+
+		this.turrets = [];
 	}
 
 	display() {
+		let zoom = display.zoom;
+
 		this.escapeThrust = round((this.mass*rocket.mass)/Math.pow(this.radius+rocket.height/2, 2));
 
 		if (inScreen(this.pos, false, this.radius + 100)) {
-			let zoom = display.zoom;
+			
 			ctx.save();
 
 			let options = {
@@ -37,7 +43,7 @@ class Planet {
 
 			var screenPos = getScreenPos(this.pos, zoom);
 
-			//Draw Planet
+			// Draw Planet
 			if(this.type == "Planet") {
 				drawCircle(screenPos.x, screenPos.y, this.radius*zoom, this.color, options);
 			} else if(this.type == "Black Hole") {
@@ -47,7 +53,7 @@ class Planet {
 				screenPos.y - rocket.pos.y*zoom + canvas.height/2, canvas.width/2, canvas.height/2);
 
 				//Event horizon
-				if(horizonDistance >= this.radius*1.5*zoom) {
+				if (horizonDistance >= this.radius*1.5*zoom) {
 					drawCircle(screenPos.x, screenPos.y, this.radius*1.5*zoom, this.color, options);
 				} else {
 					drawCircle(screenPos.x, screenPos.y, (canvas.width*4 - canvas.width*4*(horizonDistance/(200*zoom))), this.color, options);
@@ -55,19 +61,40 @@ class Planet {
 			}
 			ctx.restore();
 		}
+
+		// Draw turrets
+		for (let t of this.turrets) {
+			if (inScreen(t.pos, false, 100*zoom)) {
+				var screenPos = getScreenPos(t.pos, zoom);
+				
+				var turretBarrel = new Vector(t.barrelHeading.x, t.barrelHeading.y);
+				turretBarrel.mult(50*zoom);
+
+				drawLine(screenPos.x, screenPos.y, screenPos.x+turretBarrel.x, screenPos.y+turretBarrel.y, "#1c1c1c", 10*zoom, "butt")
+
+				drawRotatedRoundedRect(screenPos.x, screenPos.y, 30*zoom, 40*zoom, 4*zoom, "#404040", t.angle);
+			}
+
+			// Draw turret projectiles
+			/*for (let k of projectiles) {
+				if (inScreen(k.pos)) {
+					var screenPos = getScreenPos(k.pos, zoom);
+
+					drawCircle(screenPos.x, screenPos.y, 5, "red");
+				}
+			}*/
+		}
 	}
 
 	drawMarker() {
-		/*let markerRadius = 10;
+		let markerRadius = 10;
 
 		let zoom = display.zoom;
 		let rocketPos = Vector.mult(rocket.pos, zoom);
 		let pos = Vector.mult(this.pos, zoom);
 
 		let distance = dist(this.pos, rocket.pos) - this.radius - rocket.height/2;
-		if (inScreen(this.pos)) {
-			drawText(Math.round(distance) + "km", pos.x - rocketPos.x + canvas.width/2, pos.y - rocketPos.y + canvas.height/2, "40px Arial", "white", "center", "middle");
-		} else {
+		if (distance < 5000 && !inScreen(this.pos)) {
 			let xPos, yPos;
 
 			let screenX, screenY;
@@ -126,9 +153,9 @@ class Planet {
 			}
 			drawCircle(xPos, yPos, markerRadius, this.color, options)
 			if (distance < 8000)
-				drawText(Math.round(distance) + "km", xPos + offX, yPos + offY, "20px Arial", "white", textOffset, vOffset);
-		}*/
-		// Draw markers around the edges of the screen to indicate the distance of the plamet
+				drawText(Math.round(distance) + "m", xPos + offX, yPos + offY, "20px Arial", "white", textOffset, vOffset);
+		}
+		/*// Draw markers around the edges of the screen to indicate the distance of the plamet
 		let markerRadius = 10;
 
 		let zoom = display.zoom;
@@ -204,6 +231,6 @@ class Planet {
 			} else {
 				//drawText(round(distance/1000, 1) + "km", xPos + offX, yPos + offY, "20px Arial", "white", textOffset, vOffset, 1);
 			}
-		}
+		}*/
 	}
 }

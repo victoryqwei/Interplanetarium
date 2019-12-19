@@ -57,7 +57,7 @@ let maxPlayers = 10;
 class Server {
 	constructor() {
 		this.players = {}; // Players are selected based on their socket id
-		this.map = new Map(200);
+		this.map = new Map(30);
 		this.id = Function.randomString(10);
 	}
 
@@ -68,6 +68,8 @@ class Server {
 	update() {
 		for (let id in this.players) {
 			this.harvestPlanets(this.players[id]);
+
+			this.shootPlayers(this.players[id]);
 		}
 
 		for (let id in this.players) {
@@ -76,17 +78,34 @@ class Server {
 		}
 	}
 
+	shootPlayers(rocket) {
+		let planets = this.map.planets;
+		for (let id in planets) {
+			let p = planets[id];
+			for (let t of p.turrets) {
+				t.update(this.players, p);
+				/*if (Function.dist(t.pos, rocket.pos) < 500) {
+					let direction = new Vector(rocket.pos.x, rocket.pos.y);
+					direction.sub(new Vector(t.pos.x, t.pos.y));
+
+					t.projectiles.push({angle: Math.atan2(direction.y, direction.x), time: Date.now()})
+				}*/
+			}
+		}
+	}
+
 	harvestPlanets(rocket) {
 		let delta = serverUpdateRate;
 		let planets = this.map.planets;
 		for (let id in planets) {
 			let p = planets[id];
-			if (Function.circleCollidesRect(p, rocket)) {
+
+			let withinDist = Function.dist(p.pos, rocket.pos) < (p.radius + rocket.height);
+			if (withinDist && !rocket.crashed) {
 
 				// Mine resources
 				if (p.resource.amount > 0 && p.resource.type != "None") {
 					// Decrease resource on planet and increase resource gained from player
-					console.log("onPlanet")
 					p.resource.amount = Math.max(
 						p.resource.amount-rocket.miningSpeed*delta,
 						0
@@ -97,7 +116,9 @@ class Server {
 						0
 					);
 
-					io.emit('console', p.resource.amount);
+					p.radius = p.maxRadius * (p.resource.amount/p.resource.totalAmount);
+
+					//io.emit('console', rocket.resources);
 
 					// Change planet properties
 					/*let lastRadius = p.radius;
@@ -196,7 +217,7 @@ io.on('connection', function(socket) {
 		let player = server.players[socket.id];
 
 		// Update new data
-		server.players[socket.id] = data;
+		server.players[socket.id] = Object.assign({}, server.players[socket.id], data);
 
 		// Afk timeout (no input from player)
 

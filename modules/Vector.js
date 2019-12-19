@@ -55,6 +55,12 @@ module.exports = class Vector {
 			this.mult(max);
 		}
 	}
+	static rotate(vector, ang) // Vector to rotate by an angle in radians
+	{
+	    var cos = Math.cos(ang);
+	    var sin = Math.sin(ang);
+	    return new Vector(Math.round(10000*(vector.x * cos - vector.y * sin))/10000, Math.round(10000*(vector.x * sin + vector.y * cos))/10000);
+	}
 	copy() {
 		return new Vector(this.x, this.y);
 	}

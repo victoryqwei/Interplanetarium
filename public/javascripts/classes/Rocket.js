@@ -2,6 +2,7 @@ class Rocket {
 	constructor(x, y, mass, width, height) {
 		// Positional data
 		this.pos = new Vector(x, y);
+		this.spawnPos = new Vector();
 		this.prevPos = new Vector();
 		this.vel = new Vector();
 		this.acc = new Vector();
@@ -41,7 +42,9 @@ class Rocket {
 			width: width,
 			height: height
 		}
+
 		this.setConfig(config);
+		this.respawn();
 
 		// Particles
 		this.particlesMax = 200;
@@ -51,6 +54,7 @@ class Rocket {
 		this.thrustToggle = false;
 		this.thrustSelect = true;
 
+		this.showRocket = false;
 	}
 
 	setConfig(cfg) {
@@ -60,7 +64,7 @@ class Rocket {
 		this.width = cfg.width || 20;
 
 		this.maxSpeed = cfg.maxSpeed || Infinity;
-		this.landingSpeed = cfg.landingSpeed || 250;
+		this.landingSpeed = cfg.landingSpeed || 400;
 
 		this.mass = cfg.mass || 100;
 		this.maxThrust = cfg.maxThrust || 1000;
@@ -228,13 +232,8 @@ class Rocket {
 	}
 
 	harvest(p, angle) {
-
 		// Change planet properties
 		let lastRadius = p.radius;
-		p.radius = p.maxRadius * (p.resource.amount/p.resource.totalAmount);
-		p.mass = p.maxMass * (Math.pow(p.radius, 2)/Math.pow(p.maxRadius, 2));
-		p.color = pSBC(-(1-(p.resource.amount/p.resource.totalAmount)), p.maxColor, false, true)
-		p.strokeColor = pSBC(-(1-(p.resource.amount/p.resource.totalAmount)), p.maxStrokeColor, false, true)
 
 		// Change player position to new planet radius
 		let deltaRadius = lastRadius-p.radius;
@@ -323,8 +322,32 @@ class Rocket {
 	}
 
 	respawn() {
-		this.pos.x = 0;
-		this.pos.y = 0;
+		this.showRocket = false;
+
+		// Spawn on Earth
+		let spawnVector = Vector.rotate(new Vector(0, -200), random(0, 0));
+		this.pos = new Vector(spawnVector.x, 200+spawnVector.y);
+		this.angle = Math.atan2(spawnVector.y, spawnVector.x)+Math.PI/2;
+		
+
+		// Spawn in a random location
+		/*display.zoom = 0.5;
+		this.angle = random(0, Math.PI*2);
+		let notSpawned = true
+		while (notSpawned) {
+			this.pos = new Vector(random(5000, -5000), random(5000, -5000));
+			let collidedWithAnything = false;
+			for (let id in planets) {
+				let p = planets[id]
+				if(circleCollidesRect(p, this)) {
+					collidedWithAnything = true;
+				}
+			}
+
+			if (!collidedWithAnything) {
+				notSpawned = false;
+			}
+		}*/
 
 		this.vel.x = 0;
 		this.vel.y = 0;
@@ -333,60 +356,63 @@ class Rocket {
 		this.acc.y = 0;
 
 		this.crashed = false;
-		this.angle = 0;
 		this.steer = 0;
 
 		this.fuel = this.maxFuel;
 		this.oxygen = this.maxOxygen;
 
 		for (var i = 0; i < resourceTypes.length; i++) {
-			rocket.resources[resourceTypes[i]] = 0;
+			this.resources[resourceTypes[i]] = 0;
 		}
+
+		// Animation
+		
+		animateSpawn(this.pos.x, this.pos.y, 50);
 	}
 
 	update() {
 		this.input();
-
+		
 		if (!this.crashed && Object.keys(planets).length > 0) {
 			// Extra data
 			this.closestPlanetDistance = Math.max(0, this.getClosestPlanet(planets));
 
 			this.move();
 			this.updateEssentials();
-			this.addParticles();
+			Rocket.addParticles(this);
 			this.collision();
 		}
 	}
 
-	addParticles() {
+	static addParticles(player) {
 		// Particles
-		if (this.thrust > 0) {
+		if (player.thrust > 0) {
 			let maxParticles = 1; // Change particles based on the FPS
-			let thrustRatio = this.thrust/this.maxThrust;
+			let thrustRatio = player.thrust/player.maxThrust;
 
-			var thrusterPos = this.pos.copy();
-			var rocketHeading = this.heading.copy();
-			rocketHeading.mult(-this.height/2-this.width/2);
+			var thrusterPos = new Vector(player.pos.x, player.pos.y);
+			var rocketHeading = new Vector(player.heading.x, player.heading.y);
+			rocketHeading.mult(-player.height/2-player.width/2);
 			thrusterPos.add(rocketHeading);
-			var rocketHeading = this.heading.copy();
-			rocketHeading.mult(this.width/2);
+			var rocketHeading = new Vector(player.heading.x, player.heading.y);
+			rocketHeading.mult(player.width/2);
 			rocketHeading = Vector.rotate(rocketHeading, -90);
 			thrusterPos.add(rocketHeading);
 
-			var thrusterPos2 = this.prevPos.copy();
-			var rocketHeading2 = this.heading.copy();
-			rocketHeading2.mult(-this.height/2-this.width/2);
+			var thrusterPos2 = new Vector(player.prevPos.x, player.prevPos.y);
+			var rocketHeading2 = new Vector(player.heading.x, player.heading.y);
+			rocketHeading2.mult(-player.height/2-player.width/2);
 			thrusterPos2.add(rocketHeading2);
-			var rocketHeading2 = this.heading.copy();
-			rocketHeading2.mult(this.width/2);
+			var rocketHeading2 = new Vector(player.heading.x, player.heading.y);
+			rocketHeading2.mult(player.width/2);
 			rocketHeading2 = Vector.rotate(rocketHeading2, -90);
 			thrusterPos2.add(rocketHeading2);
 
 			for (var i = 0; i < thrustRatio*maxParticles; i++) {
 				let randomPoint = interpolate(thrusterPos, thrusterPos2, Math.random());
 				// Add smoke particles
-				let smokeOffset = this.width/2;
-				let fireOffset = this.width/3;
+				let smokeOffset = player.width/2;
+				let fireOffset = player.width/3;
 
 				let smokeParticle = new Vector(
 					randomPoint.x+random(smokeOffset, -smokeOffset),
@@ -395,7 +421,7 @@ class Rocket {
 
 				smokeParticle.time = Date.now();
 				smokeParticle.type = "smoke";
-				this.particles.push(smokeParticle);
+				player.particles.push(smokeParticle);
 
 				// Add fire particles
 				for (var j = 0; j < 2; j++) {
@@ -405,33 +431,33 @@ class Rocket {
 					);
 					fireParticle.time = Date.now();
 					fireParticle.type = "fire";
-					this.particles.push(fireParticle);
+					player.particles.push(fireParticle);
 				}
 			}
 
-			var thrusterPos = this.pos.copy();
-			var rocketHeading = this.heading.copy();
-			rocketHeading.mult(-this.height/2-this.width/2);
+			var thrusterPos = new Vector(player.pos.x, player.pos.y);
+			var rocketHeading = new Vector(player.heading.x, player.heading.y);
+			rocketHeading.mult(-player.height/2-player.width/2);
 			thrusterPos.add(rocketHeading);
-			var rocketHeading = this.heading.copy();
-			rocketHeading.mult(this.width/2);
+			var rocketHeading = new Vector(player.heading.x, player.heading.y);
+			rocketHeading.mult(player.width/2);
 			rocketHeading = Vector.rotate(rocketHeading, 90);
 			thrusterPos.add(rocketHeading);
 
-			var thrusterPos2 = this.prevPos.copy();
-			var rocketHeading2 = this.heading.copy();
-			rocketHeading2.mult(-this.height/2-this.width/2);
+			var thrusterPos2 = new Vector(player.prevPos.x, player.prevPos.y);
+			var rocketHeading2 = new Vector(player.heading.x, player.heading.y);
+			rocketHeading2.mult(-player.height/2-player.width/2);
 			thrusterPos2.add(rocketHeading2);
-			var rocketHeading2 = this.heading.copy();
-			rocketHeading2.mult(this.width/2);
+			var rocketHeading2 = new Vector(player.heading.x, player.heading.y);
+			rocketHeading2.mult(player.width/2);
 			rocketHeading2 = Vector.rotate(rocketHeading2, 90);
 			thrusterPos2.add(rocketHeading2);
 
 			for (var i = 0; i < thrustRatio*maxParticles; i++) {
 				let randomPoint = interpolate(thrusterPos, thrusterPos2, Math.random());
 				// Add smoke particles
-				let smokeOffset = this.width/2;
-				let fireOffset = this.width/3;
+				let smokeOffset = player.width/2;
+				let fireOffset = player.width/3;
 
 				let smokeParticle = new Vector(
 					randomPoint.x+random(smokeOffset, -smokeOffset),
@@ -440,7 +466,7 @@ class Rocket {
 
 				smokeParticle.time = Date.now();
 				smokeParticle.type = "smoke";
-				this.particles.push(smokeParticle);
+				player.particles.push(smokeParticle);
 
 				// Add fire particles
 				for (var j = 0; j < 2; j++) {
@@ -450,7 +476,7 @@ class Rocket {
 					);
 					fireParticle.time = Date.now();
 					fireParticle.type = "fire";
-					this.particles.push(fireParticle);
+					player.particles.push(fireParticle);
 				}
 			}
 		}
@@ -466,46 +492,48 @@ class Rocket {
 			pos.add(new Vector(rocket.pos.x*display.zoom, rocket.pos.y*display.zoom));
 		}
 
-		let smokeDuration = 1000;
-		let fireDuration = 100;
-		for (let i = 0; i < player.particles.length; i++) {
-			let p = player.particles[i];
+		if (player.particles) {
+			let smokeDuration = 1000;
+			let fireDuration = 100;
+			for (let i = 0; i < player.particles.length; i++) {
+				let p = player.particles[i];
 
-	        if (smoke) {
-	        	if (p.type == "smoke" && inScreen(p, 1, 20)) {
-	        		size = player.width * random(0.5, 0.8);
-		        	ctx.globalAlpha = constrain(1-(Date.now()-p.time)/smokeDuration, 0, 1);
-							let particle = getScreenPos(p, zoom);
-		            ctx.drawImage(smoke,
+		        if (smoke) { // Check if image works
+		        	if (p.type == "smoke" && inScreen(p, 1, 20)) {
+		        		size = player.width * random(0.5, 0.8);
+			        	ctx.globalAlpha = constrain(1-(Date.now()-p.time)/smokeDuration, 0, 1);
+								let particle = getScreenPos(p, zoom);
+			            ctx.drawImage(smoke,
+										particle.x,
+										particle.y,
+			            	size*zoom,
+			            	size*zoom
+			            );
+		        	} else if (p.type == "fire" && inScreen(p, 1, 20)) {
+		        		size = 3*zoom;
+		        		ctx.globalAlpha = constrain(1-(Date.now()-p.time)/fireDuration, 0, 1);
+								let particle = getScreenPos(p, zoom);
+		        		drawRect(
 									particle.x,
 									particle.y,
-		            	size*zoom,
-		            	size*zoom
-		            );
-	        	} else if (p.type == "fire" && inScreen(p, 1, 20)) {
-	        		size = 3*zoom;
-	        		ctx.globalAlpha = constrain(1-(Date.now()-p.time)/fireDuration, 0, 1);
-							let particle = getScreenPos(p, zoom);
-	        		drawRect(
-								particle.x,
-								particle.y,
-	        			size, size,
-	        			0,"orange"
-	        		);
-	        	}
+		        			size*zoom, size*zoom,
+		        			0,"orange"
+		        		);
+		        	}
 
-	            ctx.globalAlpha = 1;
-	            continue;
-	        }
-		}
+		            ctx.globalAlpha = 1;
+		            continue;
+		        }
+			}
 
-		// Remove old particles
-		for (let i = 0; i < rocket.particles.length; i++) {
-			if (rocket.particles[i].type == "smoke" && Date.now()-rocket.particles[i].time > smokeDuration) {
-	        	rocket.particles.splice(i, 1);
-	        } else if (rocket.particles[i].type == "fire" && Date.now()-rocket.particles[i].time > fireDuration) {
-	        	rocket.particles.splice(i, 1);
-	        }
+			// Remove old particles
+			for (let i = player.particles.length-1; i > 0; i--) {
+				if (player.particles[i].type == "smoke" && Date.now()-player.particles[i].time > smokeDuration) {
+		        	player.particles.splice(i, 1);
+		        } else if (player.particles[i].type == "fire" && Date.now()-player.particles[i].time > fireDuration) {
+		        	player.particles.splice(i, 1);
+		        }
+			}
 		}
 	}
 
@@ -522,54 +550,56 @@ class Rocket {
 		if (showParticles)
 			Rocket.drawParticles(player, serverRocket);
 
-		// Draw body
-		ctx.save();
-		drawRect(pos.x, pos.y, width, height, player.angle, "#d3d3d3")
-		ctx.restore();
+		if (inScreen(player.pos, 1, 20)) {
+			// Draw body
+			ctx.save();
+			drawRect(pos.x, pos.y, width, height, player.angle, "#d3d3d3")
+			ctx.restore();
 
-		var options = {
-			alpha: 1
-		}
+			var options = {
+				alpha: 1
+			}
 
-		// Draw nose cone
-		ctx.beginPath();
-		ctx.save();
-		ctx.translate(pos.x, pos.y);
-		ctx.rotate(player.angle);
-	    ctx.moveTo(-width/2, -height/2);
-	    ctx.lineTo(width/2, -height/2);
-	    ctx.lineTo(0, -23*display.zoom);
-	    ctx.fillStyle = "red";
-	    ctx.fill();
-	    ctx.restore();
-	    ctx.closePath();
+			// Draw nose cone
+			ctx.beginPath();
+			ctx.save();
+			ctx.translate(pos.x, pos.y);
+			ctx.rotate(player.angle);
+		    ctx.moveTo(-width/2, -height/2);
+		    ctx.lineTo(width/2, -height/2);
+		    ctx.lineTo(0, -23*display.zoom);
+		    ctx.fillStyle = "red";
+		    ctx.fill();
+		    ctx.restore();
+		    ctx.closePath();
 
-		// Draw player window
-		ctx.save();
-		ctx.translate(pos.x, pos.y);
-		ctx.rotate(player.angle);
-		drawRoundedRect(0-width/4, -width, width/2, width, 3*display.zoom, "rgb(70, 70, 70)", options)
-		ctx.restore();
+			// Draw player window
+			ctx.save();
+			ctx.translate(pos.x, pos.y);
+			ctx.rotate(player.angle);
+			drawRoundedRect(0-width/4, -width, width/2, width, 3*display.zoom, "rgb(70, 70, 70)", options)
+			ctx.restore();
 
-		// Draw thrusters
-		ctx.save();
-		ctx.translate(pos.x, pos.y);
-		ctx.rotate(player.angle);
-		drawRect(-width/2, height/2, width/2, width, 0, "red")
-		ctx.restore();
+			// Draw thrusters
+			ctx.save();
+			ctx.translate(pos.x, pos.y);
+			ctx.rotate(player.angle);
+			drawRect(-width/2, height/2, width/2, width, 0, "red")
+			ctx.restore();
 
-		ctx.save();
-		ctx.translate(pos.x, pos.y);
-		ctx.rotate(player.angle);
-		drawRect(width/2, height/2, width/2, width, 0, "red")
-		ctx.restore();
+			ctx.save();
+			ctx.translate(pos.x, pos.y);
+			ctx.rotate(player.angle);
+			drawRect(width/2, height/2, width/2, width, 0, "red")
+			ctx.restore();
 
-		// Draw velocity
-		let velocityDir = new Vector(player.vel.x, player.vel.y);
-		velocityDir.normalize();
-		velocityDir.mult(20);
-		if(display.advanced) {
-			drawArrow(pos.x, pos.y, pos.x + velocityDir.x, pos.y + velocityDir.y, 2, "lime");
+			// Draw velocity
+			let velocityDir = new Vector(player.vel.x, player.vel.y);
+			velocityDir.normalize();
+			velocityDir.mult(20);
+			if(display.advanced) {
+				drawArrow(pos.x, pos.y, pos.x + velocityDir.x, pos.y + velocityDir.y, 2, "lime");
+			}
 		}
 	}
 }

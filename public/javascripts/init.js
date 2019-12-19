@@ -26,15 +26,16 @@ let display = {
 	advanced: false,
 	options: false,
 	interfaceScale: 1,
-	zoom: 1,
+	zoom: 0.5,
 	smoothZoom: [],
 	smooth: true,
-	minZoom: 0.5,
+	minZoom: 0.8,
 	maxZoom: 2.5,
 	viewPadding: 30,
 	textSpacing: 12,
 	HUDwidth: 400,
-	HUDheight: 190
+	HUDheight: 190,
+	play: 0
 }
 
 // Setup options

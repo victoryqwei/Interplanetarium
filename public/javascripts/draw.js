@@ -29,10 +29,31 @@ function drawStats() {
 }
 
 function drawSpace() {
-	let color = "#1d2951";
-	if (rocket.crashed || rocket.fuel <= 0 || rocket.oxygen <= 0)
+	
+	// Draw normally after server loads
+	if (server.map && server.map.mapRadius) {
+		
+		drawRect(rocket.pos.x, rocket.pos.y, canvas.width, canvas.height, 0, pSBC(0.1, "#1d2951", "#ff0000"));
+		var screenPos = getScreenPos(new Vector(), display.zoom);
+
+		let color = "#1d2951";
+		if (rocket.crashed || rocket.fuel <= 0 || rocket.oxygen <= 0)
 		color = pSBC(0.1, "#1d2951", "#ff0000");
-	drawRect(rocket.pos.x, rocket.pos.y, canvas.width, canvas.height, 0, color);
+		drawCircle(screenPos.x, screenPos.y, 10000*display.zoom, color);
+	} else { // Draw before server loads (Remove this once we have main menu)
+		drawRect(rocket.pos.x, rocket.pos.y, canvas.width, canvas.height, 0, "#1d2951");
+	}
+
+	var screenPos = getScreenPos(new Vector(), display.zoom);
+
+	let options = {
+		fill: false,
+		outline: true,
+		outlineWidth: 10, 
+		outlineColor: "white"
+	}
+	drawCircle(screenPos.x, screenPos.y, 10000*display.zoom, "white", options);
+	
 }
 
 function drawRespawn() {
@@ -56,10 +77,12 @@ function drawRespawn() {
 function displayPlayers() {
 	for (let id in server.players) {
 		let serverRocket = server.players[id];
-		if (id != socket.id && serverRocket.interpolated && inScreen(serverRocket.interpolated, 1, 20)) {
+		if (id != socket.id && serverRocket.interpolated) {
 			serverRocket.pos = new Vector(serverRocket.interpolated.x, serverRocket.interpolated.y);
+			serverRocket.prevPos = new Vector(serverRocket.interpolatedPrev.x, serverRocket.interpolatedPrev.y);
 			serverRocket.angle = serverRocket.interpolated.angle;
 
+			Rocket.addParticles(serverRocket);
 			Rocket.display(serverRocket, true, true);
 		}
 	}

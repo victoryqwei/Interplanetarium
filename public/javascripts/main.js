@@ -1,7 +1,7 @@
 function setup() {
 
-	// Define rocket
-	rocket = new Rocket(0, 0, 23000, 10, 27);
+	// Spawn rocket
+	rocket = new Rocket(0, 200, 23000, 10, 27);
 
 	ui = new Interface();
 
@@ -13,18 +13,25 @@ function setup() {
     }
 
    	addStats();
-
-    console.log("Finished setting up assets");
-    console.log("Created by Victor Wei and Evan Cowan");
-    console.log("#KM");
-    console.log("Join our discord server to give suggestions or feedback (in-game perks included): https://discord.gg/uKYXPeA");
+   	console.log("___________________\n\nInterplanetarium\n\nCreated by Victor Wei and Evan Cowan\n\nJoin our discord server to give suggestions or feedback (in-game perks included): \nhttps://discord.gg/uKYXPeA\n___________________");
 
     setInterval(function(){
 	    if (server) {
 			rocket.t = Date.now();
-			socket.emit('data', rocket);
+
+			var updateData = {
+				pos: rocket.pos,
+				prevPos: rocket.prevPos,
+				heading: rocket.heading,
+				angle: rocket.angle,
+				crashed: rocket.crashed,
+				thrust: rocket.thrust
+			}
+			socket.emit('data', updateData);
 		}
 	}, 50);
+
+	updateZoom(rocket);
 }
 
 function update() {
@@ -32,9 +39,10 @@ function update() {
 	// Update interface scale
 	display.interfaceScale = 0 + interfaceSlider.value / 50;
 
-	rocket.update(); // Update rocket
-
-	updateZoom(rocket); // Update zoom based on rocket speed
+	if (rocket.showRocket) {
+		rocket.update(); // Update rocket
+		updateZoom(rocket); // Update zoom based on rocket speed
+	}
 }
 
 function draw() {
@@ -54,13 +62,16 @@ function draw() {
 		p.drawMarker();
 	}
 
-	Rocket.display(rocket, true, true);
+	if (rocket.showRocket) {
+		Rocket.display(rocket, true, true);
+	}
 
 	// Server display
 	if (server) {
 		displayPlayers();
 	}
 
+	animationLoop();
 
 	ctx.restore();
 

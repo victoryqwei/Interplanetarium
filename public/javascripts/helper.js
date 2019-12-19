@@ -63,7 +63,7 @@ function drawRect(x, y, w, h, d, c, options) {
 	ctx.resetTransform();
 }
 
-function drawRoundedRect(x, y, w, h, r, c, options){
+function drawRoundedRect(x, y, w, h, r, c, options) {
 	// Draw rounded rectangle
     ctx.beginPath();
     ctx.moveTo(x+r, y);
@@ -79,6 +79,60 @@ function drawRoundedRect(x, y, w, h, r, c, options){
 	ctx.globalAlpha = options.alpha || 1;
 		ctx.fill();
 	ctx.globalAlpha = 1;
+}
+
+function drawRotatedRoundedRect(x, y, w, h, r, c, d, options) {
+	if (!options)
+		options = {};
+
+	ctx.translate(x, y);
+	ctx.rotate(d);
+	
+	ctx.moveTo(-w/2+r, -h/2);
+    ctx.lineTo(-w/2+w-r, -h/2);
+    ctx.quadraticCurveTo(-w/2+w, -h/2+0, -w/2+w, -h/2+0+r);
+   	ctx.lineTo(-w/2+w, -h/2+h-r);
+    ctx.quadraticCurveTo(-w/2+w, -h/2+h, -w/2+w-r, -h/2+h);
+    ctx.lineTo(-w/2+r, -h/2+h);
+    ctx.quadraticCurveTo(-w/2, -h/2+h, -w/2, -h/2+h-r);
+    ctx.lineTo(-w/2, -h/2+r);
+    ctx.quadraticCurveTo(-w/2, -h/2, -w/2+r, -h/2);
+
+    ctx.fillStyle = c || 'grey';
+	ctx.globalAlpha = options.alpha || 1;
+	ctx.lineWidth = 3*display.zoom;
+		ctx.fill();
+	ctx.globalAlpha = 1;
+
+	ctx.closePath();
+	ctx.resetTransform();
+}
+
+function drawStar(cx, cy, spikes, outerRadius, innerRadius) {
+    var rot = Math.PI / 2 * 3;
+    var x = cx;
+    var y = cy;
+    var step = Math.PI / spikes;
+
+    ctx.strokeSyle = "#000";
+    ctx.beginPath();
+    ctx.moveTo(cx, cy - outerRadius)
+    for (i = 0; i < spikes; i++) {
+        x = cx + Math.cos(rot) * outerRadius;
+        y = cy + Math.sin(rot) * outerRadius;
+        ctx.lineTo(x, y)
+        rot += step
+
+        x = cx + Math.cos(rot) * innerRadius;
+        y = cy + Math.sin(rot) * innerRadius;
+        ctx.lineTo(x, y)
+        rot += step
+    }
+    ctx.lineTo(cx, cy - outerRadius)
+    ctx.closePath();
+    ctx.fillStyle='white';
+    ctx.fill();
+
 }
 
 function drawImage(img, x, y, w, h, angle) {
@@ -183,7 +237,18 @@ function randn_bm() {
     var u = 0, v = 0;
     while(u === 0) u = Math.random(); //Converting [0,1) to (0,1)
     while(v === 0) v = Math.random();
-    return Math.sqrt( -2.0 * Math.log( u ) ) * Math.cos( 2.0 * Math.PI * v );
+    let num = Math.sqrt( -2.0 * Math.log( u ) ) * Math.cos( 2.0 * Math.PI * v );
+    num = num / 10.0 + 0.5; // Translate to 0 -> 1
+    if (num > 1 || num < 0) return randn_bm(); // resample between 0 and 1
+    return num;
+}
+
+function randomG(v){ 
+    var r = 0;
+    for(var i = v; i > 0; i --){
+        r += Math.random();
+    }
+    return r / v;
 }
 
 function interpolate(a, b, frac) // points A and B, frac between 0 and 1

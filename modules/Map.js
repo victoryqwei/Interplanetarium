@@ -8,26 +8,26 @@ module.exports = class Map {
 	constructor(numberOfPlanets) {
 
 		this.planetNumber = numberOfPlanets || 200;
-		this.size = 20000;
+		this.mapRadius = 10000;
 		this.massMultiplier = 1000; // How much the planet mass is multiplied by its radius
 		this.earthRadius = 200;
 
 		this.planets = {};
 
 		// Generate map
-		this.generateMap(this.planetNumber, this.size);
+		this.generateMap(this.planetNumber, this.mapRadius);
 	}
 
-	generateMap(numberOfPlanets, size) {
+	generateMap(numberOfPlanets, radius) {
 		// Initiate 
 		this.planets[Function.randomString(8)] = new Planet(0, this.earthRadius, this.earthRadius * this.massMultiplier, this.earthRadius, "Planet", "Earth", "#0d7d93", "green");
 
 		for (let i = 0; i < numberOfPlanets; i++) {
-			this.planets[Function.randomString(8)] = this.generatePlanet(size);
+			this.planets[Function.randomString(8)] = this.generatePlanet(radius);
 		}
 	}
 
-	generatePlanet(size) {
+	generatePlanet(radius) {
 		// Determine the type of planet (planet, blackhole, asteroid)
 		let seed = Math.random();
 		let randRadius;
@@ -48,19 +48,20 @@ module.exports = class Map {
 		}
 	   
 	   	// Randomly generate position until it meets the criteria
-	   	let randX, randY
+	   	let randPos = new Vector();
 	   	let generated = false;
 	   	while (!generated) {
 	   		// Creating new planets	 
-	    	randX = Function.randInt(-size, size);
-	    	randY = Function.randInt(-size, size);
+
+	    	randPos = Vector.rotate(new Vector(1, 0), Function.random(2*Math.PI, 0));
+	    	randPos.mult(Function.random(radius, 0));
 
 	    	let validPosition = true;
 
 	    	// Check for valid spawning location
 	    	for (let id in this.planets) {
 	    		let p = this.planets[id];
-				if (Function.dist(new Vector(randX, randY), p.pos) < p.radius + randRadius + minSpawnDistance) {
+				if (Function.dist(new Vector(randPos.x, randPos.y), p.pos) < p.radius + randRadius + minSpawnDistance) {
 					validPosition = false;
 				}
 			}
@@ -73,13 +74,13 @@ module.exports = class Map {
 		// Randomly create planets / black holes based on seed
 		if(seed == "planet") {
 	    	// Create planets
-	    	return new Planet(randX, randY, randRadius * this.massMultiplier, randRadius, "Planet", planetNames[Function.randInt(0, planetNames.length-1)], Function.getRandomColor())
+	    	return new Planet(randPos.x, randPos.y, randRadius * this.massMultiplier, randRadius, "Planet", planetNames[Function.randInt(0, planetNames.length-1)], Function.getRandomColor())
 		} else if (seed == "blackhole") {
 			// Create black hole
-	   		return new Planet(randX, randY, 5000000, 75, "Black Hole", "Black Hole", "#000000", "black");
+	   		return new Planet(randPos.x, randPos.y, 5000000, 75, "Black Hole", "Black Hole", "#000000", "black");
 		} else if (seed = "kanus maximus") {
 			// Create planets
-	    	return new Planet(randX, randY, 10000000, randRadius, "Planet", "Kanus Maximus", Function.getRandomColor());
+	    	return new Planet(randPos.x, randPos.y, 10000000, randRadius, "Planet", "Kanus Maximus", Function.getRandomColor());
 		}	
 	}
 }

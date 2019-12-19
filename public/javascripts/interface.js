@@ -23,7 +23,7 @@ class Interface {
 	drawInterface() {
 
 		// Interface
-		if (display.toggleInterface) {
+		if (display.toggleInterface && rocket.showRocket) {
 			this.advancedKey(); // Display advanced rocket stats
 			this.drawClosestPlanetHUD(); // Draw the closest planet scale on the interface
 			this.drawClosestPlanetInfo(); // Draw the closest planet scale
@@ -37,11 +37,13 @@ class Interface {
 	}
 
 	drawServer() {
-		drawText("Server: " + server.id, canvas.width - 10, 20, "18px Arial", "white", "right", "middle");
-		drawText("Client: " + socket.id, canvas.width - 10, 42, "18px Arial", "white", "right", "middle");
-		drawText("Players: " + Object.keys(server.players).length + " / 10", canvas.width - 10, 80, "18px Arial", "white", "right", "middle");
-		for (let i = 0; i < Object.keys(server.players).length; i++) {
-			drawText(i+1 + ". " + Object.keys(server.players)[i], canvas.width - 10, 100 + 20*i, "18px Arial", "white", "right", "middle");
+		if (server.players) {
+			drawText("Server: " + server.id, canvas.width - 10, 20, "18px Arial", "white", "right", "middle");
+			drawText("Client: " + socket.id, canvas.width - 10, 42, "18px Arial", "white", "right", "middle");
+			drawText("Players: " + Object.keys(server.players).length + " / 10", canvas.width - 10, 80, "18px Arial", "white", "right", "middle");
+			for (let i = 0; i < Object.keys(server.players).length; i++) {
+				drawText(i+1 + ". " + Object.keys(server.players)[i], canvas.width - 10, 100 + 20*i, "18px Arial", "white", "right", "middle");
+			}
 		}
 	}
 
@@ -132,117 +134,120 @@ class Interface {
 	// Draw the minimap to display surrounding planets
 	drawMinimap() {
 
-		// HUD
-		let labelSpacing = this.planetSize/4.5;
+		if (rocket.closestPlanet) {
+			// HUD
+			let labelSpacing = this.planetSize/4.5;
 
-		let textSize = 16*display.interfaceScale;
-		let resourceSize = 10*display.interfaceScale;
+			let textSize = 16*display.interfaceScale;
+			let resourceSize = 10*display.interfaceScale;
 
-		// MAP
-		let mapSize = this.planetSize;
-		let mapScaleSize = 10000;
-		let mapZoom = mapScaleSize / mapSize / 1.5;
+			// MAP
+			let mapSize = this.planetSize;
+			let mapScaleSize = 10000;
+			let mapZoom = mapScaleSize / mapSize / 1.5;
 
-		// RECT
-		let rectOptions = {
-			alpha: 0.2,
-			right: this.viewPadding
-		}
+			// RECT
+			let rectOptions = {
+				alpha: 0.2,
+				right: this.viewPadding
+			}
 
-		// ARC
-		let optionsCircle = {
-			outline: true,
-			outlineWidth: 10,
-			outlineColor: rocket.closestPlanet.strokeColor,
-			glow: false,
-			glowColor: rocket.closestPlanet.color,
-			alpha: 0.5
-		}
+			// ARC
+			let optionsCircle = {
+				outline: true,
+				outlineWidth: 10,
+				outlineColor: rocket.closestPlanet.strokeColor,
+				glow: false,
+				glowColor: rocket.closestPlanet.color,
+				alpha: 0.5
+			}
 
-		// Draw minimap center (player)
-		drawRoundedRect(canvas.width - this.HUDwidth - this.viewPadding, canvas.height - this.HUDheight - this.viewPadding, this.HUDwidth, this.HUDheight, 5, "grey", rectOptions);
+			// Draw minimap center (player)
+			drawRoundedRect(canvas.width - this.HUDwidth - this.viewPadding, canvas.height - this.HUDheight - this.viewPadding, this.HUDwidth, this.HUDheight, 5, "grey", rectOptions);
 
-		// Draw the white map edge
-		ctx.save();
-		ctx.beginPath();
-		ctx.lineWidth = 3;
-	    ctx.strokeStyle = "white";
-		ctx.arc((canvas.width - this.HUDwidth - this.viewPadding + this.HUDpadding + this.planetSize/2),
-		(canvas.height - this.HUDheight - this.viewPadding + this.HUDpadding + this.planetSize/2),
-		this.planetSize/2, 0, Math.PI*2);
-		ctx.stroke();
-		ctx.fillStyle = "#1d2951"
-		ctx.fill();
-		ctx.closePath();
-		ctx.beginPath();
-		ctx.arc((canvas.width - this.HUDwidth - this.viewPadding + this.HUDpadding + this.planetSize/2),
-		(canvas.height - this.HUDheight - this.viewPadding + this.HUDpadding + this.planetSize/2),
-		this.planetSize/2, 0, Math.PI*2);
-		ctx.fillStyle = "grey"
-		ctx.globalAlpha = 0.2;
-		ctx.clip();
-		ctx.fill();
-		ctx.closePath();
+			// Draw the white map edge
+			ctx.save();
+			ctx.beginPath();
+			ctx.lineWidth = 3;
+		    ctx.strokeStyle = "white";
+			ctx.arc((canvas.width - this.HUDwidth - this.viewPadding + this.HUDpadding + this.planetSize/2),
+			(canvas.height - this.HUDheight - this.viewPadding + this.HUDpadding + this.planetSize/2),
+			this.planetSize/2, 0, Math.PI*2);
+			ctx.stroke();
+			ctx.fillStyle = "#1d2951"
+			ctx.fill();
+			ctx.closePath();
+			ctx.beginPath();
+			ctx.arc((canvas.width - this.HUDwidth - this.viewPadding + this.HUDpadding + this.planetSize/2),
+			(canvas.height - this.HUDheight - this.viewPadding + this.HUDpadding + this.planetSize/2),
+			this.planetSize/2, 0, Math.PI*2);
+			ctx.fillStyle = "grey"
+			ctx.globalAlpha = 0.2;
+			ctx.clip();
+			ctx.fill();
+			ctx.closePath();
 
-		// Draw the planets
-		for (let id in planets) {
-			let p = planets[id];
-			if(getDistance(p.pos.x, p.pos.y, rocket.pos.x, rocket.pos.y) < mapScaleSize/2 + p.radius) {
+			// Draw the planets
+			for (let id in planets) {
+				let p = planets[id];
+				if(getDistance(p.pos.x, p.pos.y, rocket.pos.x, rocket.pos.y) < mapScaleSize/2 + p.radius) {
 
-				drawCircle((canvas.width - this.HUDwidth - this.viewPadding + this.HUDpadding + this.planetSize/2) + ((p.pos.x - rocket.pos.x) / mapZoom),
-				(canvas.height - this.HUDheight - this.viewPadding + this.HUDpadding + this.planetSize/2) + ((p.pos.y - rocket.pos.y) / mapZoom), p.radius/mapZoom, p.color);
+					drawCircle((canvas.width - this.HUDwidth - this.viewPadding + this.HUDpadding + this.planetSize/2) + ((p.pos.x - rocket.pos.x) / mapZoom),
+					(canvas.height - this.HUDheight - this.viewPadding + this.HUDpadding + this.planetSize/2) + ((p.pos.y - rocket.pos.y) / mapZoom), p.radius/mapZoom, p.color);
 
+				}
+			}
+
+			ctx.globalAlpha = 1;
+
+			// Draw enemy rockets
+			for (let id in server.players) {
+
+				let serverRocket = server.players[id];
+				if (id != socket.id && serverRocket.interpolated) {
+					serverRocket.pos = new Vector(serverRocket.interpolated.x, serverRocket.interpolated.y);
+					serverRocket.angle = serverRocket.interpolated.angle;
+
+					drawTriangle((canvas.width - this.HUDwidth - this.viewPadding + this.HUDpadding + this.planetSize/2) +  ((serverRocket.pos.x - rocket.pos.x) / mapZoom), (canvas.height - this.HUDheight - this.viewPadding + this.HUDpadding + this.planetSize/2) +  ((serverRocket.pos.y - rocket.pos.y) / mapZoom), 4, 7, serverRocket.angle, "red");
+
+				}
+			}
+
+			ctx.restore(); // Restore before clipping the drawing area
+
+			// Draw rocket position on minimap
+			drawTriangle((canvas.width - this.HUDwidth - this.viewPadding + this.HUDpadding + this.planetSize/2), (canvas.height - this.HUDheight - this.viewPadding + this.HUDpadding + this.planetSize/2), 4, 7, rocket.angle, "white");
+
+			// Sort planet list by distance
+			var sortedPlanets = [];
+
+			var keysSorted = Object.keys(planets).sort(function(a,b){
+				return planetDist(rocket, planets[a])-planetDist(rocket, planets[b])
+			})
+
+			// Display List
+			for (let i = 0; i < 5; i++) {
+				let p = planets[keysSorted[i]];
+				let distance = Math.max(0, round(planetDist(rocket, p)));
+				drawText(
+					p.name + " [" + (distance > 1000 ? round(distance / 1000, 2) + "km]" : distance + "m]"),
+					canvas.width - this.HUDwidth - this.viewPadding + this.planetSize + this.HUDpadding*2,
+					canvas.height - this.viewPadding - this.HUDheight + this.HUDpadding + labelSpacing*i,
+					textSize + "px Arial", "white", "left", "top"
+				);
+			}
+			for (let i = 0; i < 5; i++) {
+				let p = planets[keysSorted[i]];
+				let distance = Math.max(0, round(planetDist(rocket, p)));
+				drawText(
+					p.resource.type,
+					canvas.width - this.HUDwidth - this.viewPadding + this.planetSize + this.HUDpadding*2,
+					canvas.height - this.viewPadding - this.HUDheight + this.HUDpadding + labelSpacing*i - 12*display.interfaceScale,
+					resourceSize + "px Arial", "grey", "left", "top"
+				);
 			}
 		}
 
-		ctx.globalAlpha = 1;
-
-		// Draw enemy rockets
-		for (let id in server.players) {
-
-			let serverRocket = server.players[id];
-			if (id != socket.id && serverRocket.interpolated) {
-				serverRocket.pos = new Vector(serverRocket.interpolated.x, serverRocket.interpolated.y);
-				serverRocket.angle = serverRocket.interpolated.angle;
-
-				drawTriangle((canvas.width - this.HUDwidth - this.viewPadding + this.HUDpadding + this.planetSize/2) +  ((serverRocket.pos.x - rocket.pos.x) / mapZoom), (canvas.height - this.HUDheight - this.viewPadding + this.HUDpadding + this.planetSize/2) +  ((serverRocket.pos.y - rocket.pos.y) / mapZoom), 4, 7, serverRocket.angle, "red");
-
-			}
-		}
-
-		ctx.restore(); // Restore before clipping the drawing area
-
-		// Draw rocket position on minimap
-		drawTriangle((canvas.width - this.HUDwidth - this.viewPadding + this.HUDpadding + this.planetSize/2), (canvas.height - this.HUDheight - this.viewPadding + this.HUDpadding + this.planetSize/2), 4, 7, rocket.angle, "white");
-
-		// Sort planet list by distance
-		var sortedPlanets = [];
-
-		var keysSorted = Object.keys(planets).sort(function(a,b){
-			return planetDist(rocket, planets[a])-planetDist(rocket, planets[b])
-		})
-
-		// Display List
-		for (let i = 0; i < 5; i++) {
-			let p = planets[keysSorted[i]];
-			let distance = Math.max(0, round(planetDist(rocket, p)));
-			drawText(
-				p.name + " [" + (distance > 1000 ? round(distance / 1000, 2) + "km]" : distance + "m]"),
-				canvas.width - this.HUDwidth - this.viewPadding + this.planetSize + this.HUDpadding*2,
-				canvas.height - this.viewPadding - this.HUDheight + this.HUDpadding + labelSpacing*i,
-				textSize + "px Arial", "white", "left", "top"
-			);
-		}
-		for (let i = 0; i < 5; i++) {
-			let p = planets[keysSorted[i]];
-			let distance = Math.max(0, round(planetDist(rocket, p)));
-			drawText(
-				p.resource.type,
-				canvas.width - this.HUDwidth - this.viewPadding + this.planetSize + this.HUDpadding*2,
-				canvas.height - this.viewPadding - this.HUDheight + this.HUDpadding + labelSpacing*i - 12*display.interfaceScale,
-				resourceSize + "px Arial", "grey", "left", "top"
-			);
-		}
 	}
 
 	// Draw the advanced stats
@@ -412,10 +417,18 @@ class Interface {
 						planetPos.y - rocketPos.y + canvas.height/2 + textDir.y*(p.radius)*display.zoom,
 						30*display.zoom + "px Arial", "white", textAlign, "middle");
 				} else {
-					drawText("Mass: " + round(p.mass, 0) + "kg | Escape thrust: " + p.escapeThrust,
-					planetPos.x - rocketPos.x + canvas.width/2 + textDir.x*(p.radius)*display.zoom + textDir.x*60*display.zoom,
-					planetPos.y - rocketPos.y + canvas.height/2 + textDir.y*(p.radius)*display.zoom,
-					30*display.zoom + "px Arial", "white", textAlign, "middle")
+					if(p.danger == 1) {
+						drawText("Mass: " + round(p.mass, 0) + "kg | " + "★★★★★",
+						planetPos.x - rocketPos.x + canvas.width/2 + textDir.x*(p.radius)*display.zoom + textDir.x*60*display.zoom,
+						planetPos.y - rocketPos.y + canvas.height/2 + textDir.y*(p.radius)*display.zoom,
+						30*display.zoom + "px Arial", "red", textAlign, "middle")
+					} else {
+						drawText("Mass: " + round(p.mass, 0) + "kg | " + "★".repeat(Math.ceil(round(p.danger*100, 0)/20)),
+						planetPos.x - rocketPos.x + canvas.width/2 + textDir.x*(p.radius)*display.zoom + textDir.x*60*display.zoom,
+						planetPos.y - rocketPos.y + canvas.height/2 + textDir.y*(p.radius)*display.zoom,
+						30*display.zoom + "px Arial", "white", textAlign, "middle")
+					}
+					
 				}
 				if(distance/1000 > 1) {
 					drawText(round(distance/1000, 2) + "km",
@@ -430,6 +443,7 @@ class Interface {
 						50*display.zoom + "px Arial", "white", textAlign, "middle");
 					ctx.closePath();
 				}
+
 			}
 		}
 	}
@@ -437,89 +451,92 @@ class Interface {
 	// Draw closest planet on HUD
 	drawClosestPlanetHUD() {
 
-		let labelSize = 10*display.interfaceScale;
-		let titleSize = 22*display.interfaceScale;
-		let textSize = 18*display.interfaceScale;
+		if (rocket.closestPlanet) {
+			let labelSize = 10*display.interfaceScale;
+			let titleSize = 22*display.interfaceScale;
+			let textSize = 18*display.interfaceScale;
 
-		// LABEL
-		let labelSpacing = this.planetSize/4;
+			// LABEL
+			let labelSpacing = this.planetSize/4;
 
-		// Draw background HUD
-		let options = {
-			alpha: 0.2,
-			right: this.viewPadding
+			// Draw background HUD
+			let options = {
+				alpha: 0.2,
+				right: this.viewPadding
+			}
+
+			drawRoundedRect(this.viewPadding, canvas.height - this.viewPadding - this.HUDheight, this.HUDwidth, this.HUDheight, 5, "grey", options);
+
+			// Draw planet
+			let optionsCircle = {
+				outline: true,
+				outlineWidth: 10,
+				outlineColor: rocket.closestPlanet.strokeColor,
+				glow: false,
+				glowColor: rocket.closestPlanet.color,
+				alpha: 0.5
+			}
+
+			drawCircle(this.viewPadding + this.planetSize/2 + this.HUDpadding, canvas.height - this.viewPadding - this.HUDheight/2, this.planetSize/2, rocket.closestPlanet.color, optionsCircle); // Draw planet on HUD
+
+			var labels = ["NAME", "RESOURCE", "MASS", "DISTANCE"];
+
+			// Draw descriptive text
+			for (let i = 0; i < 4; i++) {
+				drawText(labels[i] + ":",
+				this.viewPadding + this.planetSize + this.HUDpadding*2,
+				canvas.height - this.viewPadding - this.HUDheight + this.HUDpadding + labelSpacing*i,
+				labelSize + "px Arial", "grey", "left", "top"
+				);
+			}
+
+			// Draw descriptive values
+			drawText(rocket.closestPlanet.name + " " + "★".repeat(Math.ceil(round(rocket.closestPlanet.danger*100, 0)/20)),
+				this.viewPadding + this.planetSize + this.HUDpadding*2,
+				canvas.height - this.viewPadding - this.HUDheight + this.HUDpadding + this.textSpacing,
+				titleSize + "px Arial", "white", "left", "top"
+			);
+			if (rocket.closestPlanet.resource.type == "None") {
+				drawText("None",
+				this.viewPadding + this.planetSize + this.HUDpadding*2,
+				canvas.height - this.viewPadding - this.HUDheight + this.HUDpadding + labelSpacing + this.textSpacing,
+				textSize + "px Arial", "white", "left", "top"
+				);
+			} else {
+				drawText(rocket.closestPlanet.resource.type + ": " + round((rocket.closestPlanet.resource.amount/rocket.closestPlanet.resource.totalAmount)*100, 1) + "%",
+				this.viewPadding + this.planetSize + this.HUDpadding*2,
+				canvas.height - this.viewPadding - this.HUDheight + this.HUDpadding + labelSpacing + this.textSpacing,
+				textSize + "px Arial", "white", "left", "top"
+				);
+			}
+			if(rocket.closestPlanet.name == "Black Hole") {
+				drawText("UNKNOWN",
+				this.viewPadding + this.planetSize + this.HUDpadding*2,
+				canvas.height - this.viewPadding - this.HUDheight + this.HUDpadding + labelSpacing*2 + this.textSpacing,
+				textSize + "px Arial", "white", "left", "top"
+				);
+			} else {
+				drawText(round(rocket.closestPlanet.mass, 0) + "kg",
+				this.viewPadding + this.planetSize + this.HUDpadding*2,
+				canvas.height - this.viewPadding - this.HUDheight + this.HUDpadding + labelSpacing*2 + this.textSpacing,
+				textSize + "px Arial", "white", "left", "top"
+				);
+			}
+			if(rocket.closestPlanetDistance/1000 > 1) {
+				drawText(round(rocket.closestPlanetDistance/1000, 2) + "km",
+				this.viewPadding + this.planetSize + this.HUDpadding*2,
+				canvas.height - this.viewPadding - this.HUDheight + this.HUDpadding + labelSpacing*3 + this.textSpacing,
+				textSize + "px Arial", "white", "left", "top"
+				);
+			} else {
+				drawText(round(rocket.closestPlanetDistance, 0) + "m",
+				this.viewPadding + this.planetSize + this.HUDpadding*2,
+				canvas.height - this.viewPadding - this.HUDheight + this.HUDpadding + labelSpacing*3 + this.textSpacing,
+				textSize + "px Arial", "white", "left", "top"
+				);
+			}
 		}
 
-		drawRoundedRect(this.viewPadding, canvas.height - this.viewPadding - this.HUDheight, this.HUDwidth, this.HUDheight, 5, "grey", options);
-
-		// Draw planet
-		let optionsCircle = {
-			outline: true,
-			outlineWidth: 10,
-			outlineColor: rocket.closestPlanet.strokeColor,
-			glow: false,
-			glowColor: rocket.closestPlanet.color,
-			alpha: 0.5
-		}
-
-		drawCircle(this.viewPadding + this.planetSize/2 + this.HUDpadding, canvas.height - this.viewPadding - this.HUDheight/2, this.planetSize/2, rocket.closestPlanet.color, optionsCircle); // Draw planet on HUD
-
-		var labels = ["NAME", "RESOURCE", "MASS", "DISTANCE"];
-
-		// Draw descriptive text
-		for (let i = 0; i < 4; i++) {
-			drawText(labels[i] + ":",
-			this.viewPadding + this.planetSize + this.HUDpadding*2,
-			canvas.height - this.viewPadding - this.HUDheight + this.HUDpadding + labelSpacing*i,
-			labelSize + "px Arial", "grey", "left", "top"
-			);
-		}
-
-		// Draw descriptive values
-		drawText(rocket.closestPlanet.name,
-			this.viewPadding + this.planetSize + this.HUDpadding*2,
-			canvas.height - this.viewPadding - this.HUDheight + this.HUDpadding + this.textSpacing,
-			titleSize + "px Arial", "white", "left", "top"
-		);
-		if (rocket.closestPlanet.resource.type == "None") {
-			drawText("None",
-			this.viewPadding + this.planetSize + this.HUDpadding*2,
-			canvas.height - this.viewPadding - this.HUDheight + this.HUDpadding + labelSpacing + this.textSpacing,
-			textSize + "px Arial", "white", "left", "top"
-			);
-		} else {
-			drawText(rocket.closestPlanet.resource.type + ": " + round((rocket.closestPlanet.resource.amount/rocket.closestPlanet.resource.totalAmount)*100, 1) + "%",
-			this.viewPadding + this.planetSize + this.HUDpadding*2,
-			canvas.height - this.viewPadding - this.HUDheight + this.HUDpadding + labelSpacing + this.textSpacing,
-			textSize + "px Arial", "white", "left", "top"
-			);
-		}
-		if(rocket.closestPlanet.name == "Black Hole") {
-			drawText("UNKNOWN",
-			this.viewPadding + this.planetSize + this.HUDpadding*2,
-			canvas.height - this.viewPadding - this.HUDheight + this.HUDpadding + labelSpacing*2 + this.textSpacing,
-			textSize + "px Arial", "white", "left", "top"
-			);
-		} else {
-			drawText(round(rocket.closestPlanet.mass, 0) + "kg",
-			this.viewPadding + this.planetSize + this.HUDpadding*2,
-			canvas.height - this.viewPadding - this.HUDheight + this.HUDpadding + labelSpacing*2 + this.textSpacing,
-			textSize + "px Arial", "white", "left", "top"
-			);
-		}
-		if(rocket.closestPlanetDistance/1000 > 1) {
-			drawText(round(rocket.closestPlanetDistance/1000, 2) + "km",
-			this.viewPadding + this.planetSize + this.HUDpadding*2,
-			canvas.height - this.viewPadding - this.HUDheight + this.HUDpadding + labelSpacing*3 + this.textSpacing,
-			textSize + "px Arial", "white", "left", "top"
-			);
-		} else {
-			drawText(round(rocket.closestPlanetDistance, 0) + "m",
-			this.viewPadding + this.planetSize + this.HUDpadding*2,
-			canvas.height - this.viewPadding - this.HUDheight + this.HUDpadding + labelSpacing*3 + this.textSpacing,
-			textSize + "px Arial", "white", "left", "top"
-			);
-		}
 	}
 
 	// Key to toggle advanced stats

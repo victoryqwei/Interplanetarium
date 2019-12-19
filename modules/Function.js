@@ -8,6 +8,10 @@ module.exports = class Function {
 		return Math.round(Math.random() * (max - min) + min);
 	}
 
+	static clamp(num, min, max) {
+	  return num <= min ? min : num >= max ? max : num;
+	}
+
 	static getRandomColor() {
 	  	var letters = '0123456789ABCDEF';
 		var color = '#';
@@ -20,6 +24,14 @@ module.exports = class Function {
 	static dist(a, b) {
 		return Math.sqrt(Math.pow(a.x-b.x, 2) + Math.pow(a.y-b.y, 2));
 	}
+
+	static randomG(v){ 
+	    var r = 0;
+	    for(var i = v; i > 0; i --){
+	        r += Math.random();
+	    }
+    	return r / v;
+    }
 
 	static randomString(length) {
 	    var chars = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghiklmnopqrstuvwxyz'.split('');
