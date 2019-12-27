@@ -13,10 +13,12 @@ function setup() {
     }
 
    	addStats();
+
    	console.log("___________________\n\nInterplanetarium\n\nCreated by Victor Wei and Evan Cowan\n\nJoin our discord server to give suggestions or feedback (in-game perks included): \nhttps://discord.gg/uKYXPeA\n___________________");
 
-    setInterval(function(){
-	    if (server) {
+   	// Update client data
+	setInterval(function(){
+	    if (server && display.play == 0) {
 			rocket.t = Date.now();
 
 			var updateData = {
@@ -25,6 +27,8 @@ function setup() {
 				heading: rocket.heading,
 				angle: rocket.angle,
 				crashed: rocket.crashed,
+				fuel: rocket.fuel,
+				oxygen: rocket.oxygen,
 				thrust: rocket.thrust
 			}
 			socket.emit('data', updateData);
@@ -38,32 +42,61 @@ function update() {
 
 	// Update interface scale
 	display.interfaceScale = 0 + interfaceSlider.value / 50;
+	updateCookie("userScale", display.interfaceScale);
 
-	if (rocket.showRocket) {
+	ui.HUDwidth = display.HUDwidth * display.interfaceScale;
+	ui.HUDheight = display.HUDheight * display.interfaceScale;
+	ui.viewPadding = display.viewPadding * display.interfaceScale;
+	ui.textSpacing = display.textSpacing * display.interfaceScale;
+	ui.planetSize = ui.HUDheight * 0.75;
+	ui.HUDpadding = ui.HUDheight * 0.125;
+
+	if (rocket.showRocket && display.play == 0) {
 		rocket.update(); // Update rocket
 		updateZoom(rocket); // Update zoom based on rocket speed
+	}
+
+	if (server.map) {
+		updateProjectiles();
+	}
+
+	if(display.play == 2) {
+		display.minZoom = 0.1;
+		updateSpectatorControls();
+	} else {
+		display.minZoom = 0.8;
 	}
 }
 
 function draw() {
+
 	ctx.save();
 	ctx.translate(canvas.width/2 - rocket.pos.x, canvas.height/2 - rocket.pos.y);
-
 	drawSpace();
 
 	for (let s of stars) { // Draw stars
-		s.display();
+		if(server.map) { // The ugly WEI
+			if(getDistance(0, 0, s.pos.x + rocket.pos.x - (rocket.pos.x / s.starDistance), s.pos.y + rocket.pos.y - (rocket.pos.y / s.starDistance)) <= server.map.mapRadius) {
+				s.display();
+			}
+		} else {
+			s.display();
+		}
 	}
 
 	for (let id in planets) {
 		let p = planets[id];
 
 		p.display();
-		p.drawMarker();
+		if(display.play == 0) {
+			p.drawMarker();
+		}
 	}
 
-	if (rocket.showRocket) {
-		Rocket.display(rocket, true, true);
+	for (let id in planets) {
+		let p = planets[id];
+		p.displayTurret();
+		p.displayBase();
 	}
 
 	// Server display
@@ -71,18 +104,45 @@ function draw() {
 		displayPlayers();
 	}
 
+	displayProjectiles();
+	
+
+	if (rocket.showRocket && server && server.players[socket.id]) {
+		if(display.play == 0 || Object.keys(server.players).length > 0) {
+			Rocket.display(rocket, false, true);
+		}
+	}
+
 	animationLoop();
 
 	ctx.restore();
 
 	ui.drawInterface();
+
 	drawRespawn(); // Death screen
 
 	if(display.advanced) {
 		drawStats();
 	}
+}
 
-	drawMenu();
+function updateSpectatorControls() {
+
+	display.spectate = false;
+
+	if(keys[65]) {
+		rocket.pos.x -= 0.5*delta/display.zoom/2;
+	}
+	if(keys[87]) {
+		rocket.pos.y -= 0.5*delta/display.zoom/2;
+	}
+	if(keys[68]) {
+		rocket.pos.x += 0.5*delta/display.zoom/2;
+	}
+	if(keys[83]) {
+		rocket.pos.y += 0.5*delta/display.zoom/2;
+	}
+
 }
 
 // Keyboard events
@@ -107,6 +167,12 @@ var mouse = new Vector();
 $("#canvas").on("mousemove", function (e) {
 	mouse.x = e.offsetX;
 	mouse.y = e.offsetY;
+})
+
+$("#canvas").on("mousedown", function (e) {
+	mouse.down = true;
+}).on("mouseup", function (e) {
+	mouse.down = false;
 })
 
 

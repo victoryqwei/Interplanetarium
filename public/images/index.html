@@ -7,7 +7,7 @@ Created by Victor Wei and Evan Cowan-->
 	<head>
 		<meta charset=utf-8>
 		<title>Interplanetarium</title>
-		<link rel="icon" href="images/favicon.png">
+		<link rel="icon" href="favicon.png">
 		<link rel="stylesheet" taype="terext/css" href="stylesheets/style.css">
 		<script>
 			document.cookie = 'cross-site-cookie=bar; SameSite=Strict';
@@ -65,7 +65,7 @@ Created by Victor Wei and Evan Cowan-->
 					<input id="color" type="color" style="width: 35px; height: 46px; font-size: 33.37px; opacity: 1; text-align: center; display: inline-block; position: relative; top: 11px;"/>
 					<br/>
 					<br/>
-					<div id="playControls" style="float: center; position: relative; display:none">
+					<div style="float: center; position: relative;">
 						<a id="begin" class="beginButton" style="background-color: black; position: relative;">Begin</a>
 						<a id="spec" class="beginButton" style="background-color: black; position: relative; padding:10px 37px;">Spectate</a>
 					</div>
@@ -87,32 +87,14 @@ Created by Victor Wei and Evan Cowan-->
 		</div>
 	</div>
 
-	<div id="settings" style="width: 100%; height:40%; top:28%; position: absolute; float: center; display: none;">
-
-		<div style="background-color: rgba(0,0,0,0.2); position: absolute; left: 25%; width: 49%; text-align: center; border-radius: 5px; height: 350px;">
-			<div style="position: relative; float: center;">
-				<h1 class="title" style="font-size: 50px; position: relative; float: top;" id="title">SETTINGS</h1>
-			</div>
-			<label class="title" style="font-size: 17px;">Interface Scale</label>
-			<br/>
-			<div class="slidecontainer" style="position: relative; margin-right:auto; margin-left: auto; float: center;">
-			  <input type="range" min="1" max="100" value="50" class="slider" id="interfaceScale" style="position: relative; float: center; width: 200px;">
-			</div>
-			<br/>
-			<div style="position: inline-block;">
-				<input style="position: inline-block;" id="planetMarker" type="checkbox" name="planetMarker" value="legacy">
-				<label class="title" style="font-size: 17px;">Legacy Planet Markers</label>
-			</div>
-			<br/>
-			<div style="position: inline-block;">
-				<input style="position: inline-block;" id="performance" type="checkbox" name="performanceMode" value="performance">
-				<label class="title" style="font-size: 17px;">Performance Mode</label>
-			</div>
-		</div>
-	</div>
-
 	<body oncontextmenu="return false;">
 		<canvas id="canvas"></canvas>
+
+		<div style="width: 100%; height: 10px; position: absolute; top: 50%; display: none; z-index: 1;" id="options-container">
+			<div class="slidecontainer" style="position: relative; margin-right:auto; margin-left: auto; float: center; width: 200px;">
+			  <input type="range" min="1" max="100" value="50" class="slider" id="interfaceScale" style="position: relative; float: center; width: 200px;">
+			</div>
+		</div>
 
 		<!-- <div id="feedback-container" style="text-align: left;">
 			<a id="feedback-link">Created by Victor Wei and Evan Cowan</a>
@@ -124,10 +106,10 @@ Created by Victor Wei and Evan Cowan-->
 
 		<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
 		<script src="https://cdn.jsdelivr.net/npm/ola"></script>
+
 		<script src="javascripts/socket.io.js"></script>
 		<script src="javascripts/helper.js"></script>
-		<script src="javascripts/cookie.js"></script>
-	
+
 		<!-- Classes -->
 		<script src="javascripts/classes/Vector.js"></script>
 		<script src="javascripts/classes/Rocket.js"></script>

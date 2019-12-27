@@ -14,7 +14,7 @@ class Turret {
 	}
 
 	display() {
-		if (inScreen(this.pos)) {
+		if (inScreen(this.pos, false, 10)) {
 			let zoom = display.zoom;
 			ctx.save();
 

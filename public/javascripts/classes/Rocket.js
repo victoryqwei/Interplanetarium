@@ -26,7 +26,12 @@ class Rocket {
 		this.fuel = 0;
 		this.oxygen = 0;
 
+		// Rocket integrity
+		this.integrity = 100;
+		this.maxIntegrity = this.integrity;
+
 		// Resource inventory
+		this.level = 1;
 		this.resources = {Iron: 0, Copper: 0, Kanium: 0, Lead: 0};
 
 		// Extra data
@@ -35,7 +40,8 @@ class Rocket {
 
 		this.crashed = false;
 
-		this.t = Date.now();
+		// Projectiles
+		this.tShoot = 0;
 
 		// Set config
 		let config = {
@@ -44,17 +50,30 @@ class Rocket {
 		}
 
 		this.setConfig(config);
-		this.respawn();
 
 		// Particles
 		this.particlesMax = 200;
 		this.particles = [];
+
+		// Parts (when the rocket crashes or gets destroyed)
+
+		this.parts = [];
 
 		this.welcome = false;
 		this.thrustToggle = false;
 		this.thrustSelect = true;
 
 		this.showRocket = false;
+
+		this.name = "Player";
+		this.color = "red";
+
+		
+		this.statistics = {
+			speed: 10,
+			resistance: 20,
+			damage: 1
+		}
 	}
 
 	setConfig(cfg) {
@@ -64,7 +83,7 @@ class Rocket {
 		this.width = cfg.width || 20;
 
 		this.maxSpeed = cfg.maxSpeed || Infinity;
-		this.landingSpeed = cfg.landingSpeed || 400;
+		this.landingSpeed = cfg.landingSpeed || 600;
 
 		this.mass = cfg.mass || 100;
 		this.maxThrust = cfg.maxThrust || 1000;
@@ -84,12 +103,27 @@ class Rocket {
 
 		// Mining
 		this.miningSpeed = cfg.miningSpeed || 0.01;
+
+		// Shooting
+		this.cooldown = 10;
+
+		// Controls
+		this.controlType = "mouse" // Or "keyboard"
 	}
 
 	input() {
+		/*
+			
+			Controls
+
+		*/
+		// Mouse setup
+		let angle = mouse.copy();
+		angle.sub(new Vector(canvas.width/2, canvas.height/2));
+		
 		// Respawn
 		if (keys[82]) { // R
-			if (this.crashed || this.fuel <= 0 || this.oxygen <= 0) {
+			if (this.crashed || this.fuel <= 0 || this.oxygen <= 0 || this.integrity <= 0) {
 				this.respawn();
 			}
 
@@ -113,7 +147,8 @@ class Rocket {
 		// Check if there's still oxygen
 		if (this.oxygen > 0) {
 			// Steering
-			if (this.closestPlanetDistance > 5) {
+			if (this.closestPlanetDistance > 5 && this.fuel > 0 && !this.crashed && this.integrity > 0) { // Make sure you don't steer while on planet
+				this.angle = Math.atan2(angle.y, angle.x)+Math.PI/2;
 				if (keys[37] || keys[65]) {
 					this.steer = -1;
 				} else if (keys[39] || keys[68]) {
@@ -123,10 +158,31 @@ class Rocket {
 				}
 			}
 
+			// Shooting
+			if (mouse.down && this.tShoot <= 0 && !this.crashed && this.integrity > 0) { // Make this server side by only sending the key input, or do client prediction
+				let projectileData = {
+					pos: this.pos.copy(), // Just remove the .copy() so the rocket becomes a projectile lmao
+					vel: this.vel.copy(),
+					heading: this.heading,
+					angle: this.angle+Math.PI/2,
+					speed: 1,
+					time: Date.now(),
+					id: socket.id, // So we don't get server projectile
+					type: "player"
+				}
+
+				socket.emit('projectile', projectileData)
+
+				projectiles.push(projectileData);
+				this.tShoot = this.cooldown;
+			}
+
+			this.tShoot -= 1;
+
 			// Check if there's still fuel
-			if (this.fuel > 0 && !this.crashed) {
+			if (this.fuel > 0 && !this.crashed && this.integrity > 0) {
 				// Thrust
-				if (keys[38] || keys[87]) {
+				if (keys[38] || keys[87] || keys[32]) {
 					this.thrust = Math.min(this.maxThrust, this.thrust + this.thrustSpeed * delta / 16);
 				} else if(keys[33]) { // Instant thrust? page down
 					this.thrust = 500;
@@ -281,7 +337,7 @@ class Rocket {
 					// High velocity or wrong landing
 					this.crashed = true;
 				} else {
-					// Proper landing
+					// Perfect landing or Good landing
 					this.fuel = constrain(this.fuel + delta * 10, 0, this.maxFuel);
 					this.angle = angle+Math.PI/2;
 					this.steer = 0;
@@ -324,18 +380,16 @@ class Rocket {
 	respawn() {
 		this.showRocket = false;
 
-		// Spawn on Earth
-		let spawnVector = Vector.rotate(new Vector(0, -200), random(0, 0));
+		/*// Spawn on Earth
+		let spawnVector = Vector.rotate(new Vector(0, -200), random(0, Math.PI*2));
 		this.pos = new Vector(spawnVector.x, 200+spawnVector.y);
-		this.angle = Math.atan2(spawnVector.y, spawnVector.x)+Math.PI/2;
-		
-
+		this.angle = Math.atan2(spawnVector.y, spawnVector.x)+Math.PI/2;*/
 		// Spawn in a random location
-		/*display.zoom = 0.5;
+		display.zoom = 0.5;
 		this.angle = random(0, Math.PI*2);
-		let notSpawned = true
+		let notSpawned = true;
 		while (notSpawned) {
-			this.pos = new Vector(random(5000, -5000), random(5000, -5000));
+			this.pos = randCircle(2000);
 			let collidedWithAnything = false;
 			for (let id in planets) {
 				let p = planets[id]
@@ -347,7 +401,7 @@ class Rocket {
 			if (!collidedWithAnything) {
 				notSpawned = false;
 			}
-		}*/
+		}
 
 		this.vel.x = 0;
 		this.vel.y = 0;
@@ -361,9 +415,13 @@ class Rocket {
 		this.fuel = this.maxFuel;
 		this.oxygen = this.maxOxygen;
 
+		this.integrity = this.maxIntegrity;
+
 		for (var i = 0; i < resourceTypes.length; i++) {
 			this.resources[resourceTypes[i]] = 0;
 		}
+
+		socket.emit("respawn", '');
 
 		// Animation
 		
@@ -371,7 +429,8 @@ class Rocket {
 	}
 
 	update() {
-		this.input();
+		if (this.showRocket)
+			this.input();
 		
 		if (!this.crashed && Object.keys(planets).length > 0) {
 			// Extra data
@@ -499,7 +558,7 @@ class Rocket {
 				let p = player.particles[i];
 
 		        if (smoke) { // Check if image works
-		        	if (p.type == "smoke" && inScreen(p, 1, 20)) {
+		        	if (p.type == "smoke" && inScreen(p, 1, 20) && !display.performanceMode) {
 		        		size = player.width * random(0.5, 0.8);
 			        	ctx.globalAlpha = constrain(1-(Date.now()-p.time)/smokeDuration, 0, 1);
 								let particle = getScreenPos(p, zoom);
@@ -510,7 +569,7 @@ class Rocket {
 			            	size*zoom
 			            );
 		        	} else if (p.type == "fire" && inScreen(p, 1, 20)) {
-		        		size = 3*zoom;
+		        		size = 2;
 		        		ctx.globalAlpha = constrain(1-(Date.now()-p.time)/fireDuration, 0, 1);
 								let particle = getScreenPos(p, zoom);
 		        		drawRect(
@@ -553,7 +612,7 @@ class Rocket {
 		if (inScreen(player.pos, 1, 20)) {
 			// Draw body
 			ctx.save();
-			drawRect(pos.x, pos.y, width, height, player.angle, "#d3d3d3")
+			drawRect(pos.x, pos.y, width, height, player.angle, pSBC(Math.max(-(1-(player.integrity/100)), -1), "#d3d3d3", false, true))
 			ctx.restore();
 
 			var options = {
@@ -568,7 +627,7 @@ class Rocket {
 		    ctx.moveTo(-width/2, -height/2);
 		    ctx.lineTo(width/2, -height/2);
 		    ctx.lineTo(0, -23*display.zoom);
-		    ctx.fillStyle = "red";
+		    ctx.fillStyle = player.color;
 		    ctx.fill();
 		    ctx.restore();
 		    ctx.closePath();
@@ -584,22 +643,22 @@ class Rocket {
 			ctx.save();
 			ctx.translate(pos.x, pos.y);
 			ctx.rotate(player.angle);
-			drawRect(-width/2, height/2, width/2, width, 0, "red")
+			drawRect(-width/2, height/2, width/2, width, 0, player.color)
 			ctx.restore();
 
 			ctx.save();
 			ctx.translate(pos.x, pos.y);
 			ctx.rotate(player.angle);
-			drawRect(width/2, height/2, width/2, width, 0, "red")
+			drawRect(width/2, height/2, width/2, width, 0, player.color)
 			ctx.restore();
 
 			// Draw velocity
-			let velocityDir = new Vector(player.vel.x, player.vel.y);
+			/*let velocityDir = new Vector(player.vel.x, player.vel.y);
 			velocityDir.normalize();
 			velocityDir.mult(20);
 			if(display.advanced) {
 				drawArrow(pos.x, pos.y, pos.x + velocityDir.x, pos.y + velocityDir.y, 2, "lime");
-			}
+			}*/
 		}
 	}
 }

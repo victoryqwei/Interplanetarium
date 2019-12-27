@@ -1,5 +1,3 @@
-// HTML canvas shapes
-
 function drawCircle(x, y, r, c, options) {
 	if (!options)
 		options = {};
@@ -135,11 +133,24 @@ function drawStar(cx, cy, spikes, outerRadius, innerRadius) {
 
 }
 
+function drawCheckmark(x, y, size, width) {
+	ctx.beginPath();
+	ctx.moveTo(x-size, y);
+	ctx.lineTo(x,y+size);
+	ctx.lineTo(x+size*2,y-size);
+	ctx.lineWidth = width;
+	ctx.strokeStyle = '#fff';
+	ctx.stroke();
+	ctx.closePath(); 
+}
+
 function drawImage(img, x, y, w, h, angle) {
+	ctx.beginPath();
 	ctx.translate(x, y);
 	ctx.rotate(angle);
 	ctx.drawImage(img, -w, -h, w*2, h*2);
 	ctx.resetTransform();
+	ctx.closePath();
 }
 
 function drawCircleImage(img, x, y, r, angle) {
@@ -212,6 +223,60 @@ function drawArrow(x1, y1, x2, y2, thickness, color, alpha, cap){
 	ctx.resetTransform();
 }
 
+// Color
+
+function getRandomRgb() {
+  var num = Math.round(0xffffff * Math.random());
+  var r = num >> 16;
+  var g = num >> 8 & 255;
+  var b = num & 255;
+  return 'rgb(' + r + ', ' + g + ', ' + b + ')';
+}
+
+function getRandomHEX() {
+	var randomColor = "#000000".replace(/0/g,function(){return (~~(Math.random()*16)).toString(16);});
+	return randomColor;
+}
+// Create an RGB value from a hex value
+function hexToRgb(hex) {
+    var result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+    return result ? {
+        r: parseInt(result[1], 16),
+        g: parseInt(result[2], 16),
+        b: parseInt(result[3], 16)
+    } : null;
+}
+
+// Create an hex value from a RGB value
+function rgbToHex(rgb) { 
+  var hex = Number(rgb).toString(16);
+  if (hex.length < 2) {
+       hex = "0" + hex;
+  }
+  return hex;
+};
+
+// Random ID
+
+function randomString(length) {
+    var chars = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghiklmnopqrstuvwxyz'.split('');
+
+    if (! length) {
+        length = Math.floor(Math.random() * chars.length);
+    }
+
+    var str = '';
+    for (var i = 0; i < length; i++) {
+        str += chars[Math.floor(Math.random() * chars.length)];
+    }
+    return str;
+}
+
+// Map number from one range to another
+
+Number.prototype.map = function (in_min, in_max, out_min, out_max) {
+  return (this - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
+}
 
 // Math functions
 
@@ -231,6 +296,14 @@ function random(max, min) {
 
 function randInt(min, max) {
 	return Math.round(Math.random() * (max - min) + min);
+}
+
+// Return a random vector that is uniformly distributed within a circle given a radius
+function randCircle(radius) { 
+	var r = radius * Math.sqrt(Math.random());
+	var theta = Math.random() * 2 * Math.PI;
+
+	return new Vector(r * Math.cos(theta), r * Math.sin(theta));
 }
 
 function randn_bm() {

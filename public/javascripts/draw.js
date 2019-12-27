@@ -1,4 +1,4 @@
-function drawMenu() {
+/*function drawMenu() {
 	if (display.toggleMenu) {
 		// TITLE
 		let titleOptions = {
@@ -19,7 +19,7 @@ function drawMenu() {
 		display.toggleInterface = true;
 		display.toggleMenu = false;
 	}
-}
+}*/
 
 function drawStats() {
 	for (var i = 0; i < stats.length; i++) {
@@ -33,31 +33,29 @@ function drawSpace() {
 	// Draw normally after server loads
 	if (server.map && server.map.mapRadius) {
 		
-		drawRect(rocket.pos.x, rocket.pos.y, canvas.width, canvas.height, 0, pSBC(0.1, "#1d2951", "#ff0000"));
+		drawRect(rocket.pos.x, rocket.pos.y, canvas.width, canvas.height, 0, "#000000");
 		var screenPos = getScreenPos(new Vector(), display.zoom);
 
 		let color = "#1d2951";
-		if (rocket.crashed || rocket.fuel <= 0 || rocket.oxygen <= 0)
+		if (rocket.crashed || rocket.fuel <= 0 || rocket.oxygen <= 0 || rocket.integrity <= 0)
 		color = pSBC(0.1, "#1d2951", "#ff0000");
-		drawCircle(screenPos.x, screenPos.y, 10000*display.zoom, color);
+		drawCircle(screenPos.x, screenPos.y, server.map.mapRadius*display.zoom, color);
 	} else { // Draw before server loads (Remove this once we have main menu)
 		drawRect(rocket.pos.x, rocket.pos.y, canvas.width, canvas.height, 0, "#1d2951");
 	}
 
 	var screenPos = getScreenPos(new Vector(), display.zoom);
 
-	let options = {
-		fill: false,
-		outline: true,
-		outlineWidth: 10, 
-		outlineColor: "white"
+	let mapRadius = 0;
+	if (server.map && server.map.mapRadius) {
+		mapRadius = server.map.mapRadius;
+	} else {
+		mapRadius = 10000;
 	}
-	drawCircle(screenPos.x, screenPos.y, 10000*display.zoom, "white", options);
-	
 }
 
 function drawRespawn() {
-	if (rocket.crashed || rocket.fuel <= 0 || rocket.oxygen <= 0) {
+	if (rocket.crashed || rocket.fuel <= 0 || rocket.oxygen <= 0 || rocket.integrity <= 0) {
 		let text;
 		if (rocket.oxygen <= 0)
 			text = "You ran out of oxygen!";
@@ -67,6 +65,9 @@ function drawRespawn() {
 			text = "You crashed!";
 		else if (rocket.goodLanding === false)
 			text = "You flipped over!";
+		else if (rocket.integrity <= 0) {
+			text = "Your rocket got destroyed!"
+		}
 
 
 		ui.drawTitle(text, "Press R to respawn", true);
@@ -77,7 +78,7 @@ function drawRespawn() {
 function displayPlayers() {
 	for (let id in server.players) {
 		let serverRocket = server.players[id];
-		if (id != socket.id && serverRocket.interpolated) {
+		if (id != socket.id && serverRocket.interpolated && inScreen(serverRocket.pos, 1, 20)) {
 			serverRocket.pos = new Vector(serverRocket.interpolated.x, serverRocket.interpolated.y);
 			serverRocket.prevPos = new Vector(serverRocket.interpolatedPrev.x, serverRocket.interpolatedPrev.y);
 			serverRocket.angle = serverRocket.interpolated.angle;

@@ -1,11 +1,23 @@
+var Vector = require('./Vector.js')
+
 module.exports = class Function {
 
 	static random(max, min) {
-		return Math.random() * (max - min) + min;
+		if (max != undefined)
+			return Math.random() * (max - min) + min;
+		else
+			return Math.random();
 	}
 
 	static randInt(min, max) {
 		return Math.round(Math.random() * (max - min) + min);
+	}
+
+	static randCircle(radius) { // return a random vector that is uniformly distributed within a circle given a radius
+		var r = radius * Math.sqrt(Math.random());
+		var theta = Math.random() * 2 * Math.PI;
+
+		return new Vector(r * Math.cos(theta), r * Math.sin(theta));
 	}
 
 	static clamp(num, min, max) {

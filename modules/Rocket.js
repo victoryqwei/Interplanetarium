@@ -1,7 +1,7 @@
 var Vector = require('./Vector.js');
 
 module.exports = class Rocket {
-	constructor(x, y, mass, width, height) {
+	constructor(x, y, mass, width, height, name, color) {
 		// Positional data
 		this.pos = new Vector(x, y);
 		this.prevPos = new Vector();
@@ -27,11 +27,15 @@ module.exports = class Rocket {
 		this.fuel = 0;
 		this.oxygen = 0;
 
-		this.crashed = false;
+		// Rocket integrity
+		this.integrity = 100;
+		this.maxIntegrity = this.integrity;
 
 		// Extra data
 		this.closestPlanetDistance = 0;
 		this.closestPlanet = undefined;
+
+		this.crashed = false;
 
 		this.resources = {Iron: 0, Copper: 0, Kanium: 0, Lead: 0};
 
@@ -51,6 +55,9 @@ module.exports = class Rocket {
 		this.welcome = false;
 		this.thrustToggle = false;
 		this.thrustSelect = true;
+
+		this.name = name || "Player";
+		this.color = color || "red";
 
 	}
 

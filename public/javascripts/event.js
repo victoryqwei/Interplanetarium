@@ -11,7 +11,8 @@ socket.on('init', function (serverData) {
 		planets[id] = new Planet(p.pos.x, p.pos.y, p.mass, p.radius, p.type, p.name, p.color, p.strokeColor, p.resource, p.id);
 	}
 
-	console.log("Client ID: " + socket.id, "Server ID: " + server.id);
+	console.log("Successfully connected to the server!\nClient ID: " + socket.id + "\nServer ID: " + server.id);
+	$("#playControls").show();
 });
 
 var server = {};
@@ -19,6 +20,12 @@ var serverUpdateRate = 5;
 let prev = Date.now();
 
 socket.on('update', function (serverData) {
+	// Update update rate
+	server.updateRate = serverData.updateRate;
+
+	// Update spectator / player list
+	server.spectators = serverData.spectators;
+
 	// Update map
 	let map = serverData.map;
 
@@ -32,7 +39,9 @@ socket.on('update', function (serverData) {
 			planets[id].color = pSBC(-(1-(planets[id].resource.amount/planets[id].resource.totalAmount)), planets[id].maxColor, false, true)
 			planets[id].strokeColor = pSBC(-(1-(planets[id].resource.amount/planets[id].resource.totalAmount)), planets[id].maxStrokeColor, false, true);
 			planets[id].danger = p.danger;
+
 			planets[id].turrets = p.turrets;
+			planets[id].bases = p.bases;
 		}
 	}
 
@@ -77,7 +86,7 @@ socket.on('update', function (serverData) {
 			players[id].particles = particles;
 
 		} else if (id != socket.id) {
-			console.log("Player", id, "connected");
+			//console.log("Player", id, "connected");
 			players[id] = new Rocket(newPlayers[id].pos.x, newPlayers[id].pos.y);
 			players[id].interpolated = Ola({x: 0, y: 0, angle: 0}, 1000/serverUpdateRate);
 			players[id].interpolatedPrev = Ola({x: 0, y: 0, angle: 0}, 1000/serverUpdateRate);
@@ -86,7 +95,9 @@ socket.on('update', function (serverData) {
 		// Update client player
 
 		if (id == socket.id) {
+			players[id] = rocket;
 			rocket.resources = newPlayers[id].resources;
+			rocket.integrity = newPlayers[id].integrity;
 		}
 	}
 
@@ -100,13 +111,32 @@ socket.on('update', function (serverData) {
 		}
 
 		if (!exists) {
-			console.log("Player", i, "disconnected");
+			//console.log("Player", i, "disconnected");
 			delete players[i];
 		}
 	}
 })
 
+var projectiles = [];
+socket.on('projectile', function (data) {
+	if (data.id != socket.id) { // Don't receive own projectiles
+		if (data.type == "player" && server.players[data.id]) {
+			data.pos = new Vector(server.players[data.id].pos.x, server.players[data.id].pos.y);
+		}
+		projectiles.push(data);
+	} 
+})
+
+socket.on('delete', function(id) {
+	delete planets[id];
+})
+
 // Emit random server console
 socket.on('console', function (consoleData) {
 	console.log(consoleData);
+})
+
+// Refresh if server code is updated
+socket.on('refresh', function () {
+	location.reload(true);
 })

@@ -1,19 +1,5 @@
-class Cookie {
-    constructor() {
-        this.name = name;
-        this.value = value;
-    }
-
-    setCookie(cname,cvalue,exdays) {
-        var d = new Date(); 
-        d.setTime(d.getTime() + (exdays*1000*60*60*24));
-        var expires = "expires=" + d.toGMTString(); 
-        window.document.cookie = cname+"="+cvalue+"; "+expires;
-    }
-}
 
 // Cookie functions for storing and getting data
-
 function setCookie(cname,cvalue,exdays) {
     var d = new Date(); 
     d.setTime(d.getTime() + (exdays*1000*60*60*24));
@@ -50,6 +36,33 @@ function checkCookie() {
            setCookie("vistorname", vistor, 30);
        }
     }
+}
+
+function updateCookie(cname, cvalue) {
+
+    if(getCookie(cname) == "") {
+        console.log('Created cookie with value: ' + JSON.stringify(cvalue))
+        let exdays = 365;
+        setCookie(cname,cvalue,exdays);
+    }
+    if(JSON.stringify(cvalue) != getCookie(cname)) {
+        deleteCookie(cname);
+        let exdays = 365;
+        setCookie(cname,cvalue,exdays);
+    }
+}
+
+// Save color to cookie if there is no color saved
+if(getCookie('userColor') != "") {
+    $("#color").val(JSON.parse(getCookie('userColor')));
+} else {
+    document.getElementById("color").value = getRandomHEX();
+}   
+
+// If name is empty change value of nametag to cookie value
+if(getCookie('userName') != "") {
+var nameBox = document.getElementById("name");
+nameBox.value = JSON.parse(getCookie('userName'))
 }
 
 /*

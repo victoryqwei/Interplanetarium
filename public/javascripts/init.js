@@ -21,26 +21,32 @@ $(window).resize(function () {
 
 // Display settings
 let display = {
+	legacyPlanetMarker: true,
+	performanceMode: false,
 	toggleMenu: true,
+	toggleHUD: false,
 	toggleInterface: false,
+	spectate: true,
+	triggerSpectate: false,
 	advanced: false,
 	options: false,
 	interfaceScale: 1,
 	zoom: 0.5,
 	smoothZoom: [],
-	smooth: true,
+	smooth: false,
 	minZoom: 0.8,
 	maxZoom: 2.5,
 	viewPadding: 30,
 	textSpacing: 12,
 	HUDwidth: 400,
 	HUDheight: 190,
-	play: 0
+	play: 1
 }
 
 // Setup options
 var interfaceSlider = document.getElementById("interfaceScale");
-interfaceSlider.value = display.interfaceScale * 50;
+interfaceSlider.value = getCookie("userScale")*50 || display.interfaceScale * 50;
+
 
 let rocket, planets, stars;
 planets = stars = [];
@@ -49,8 +55,34 @@ let stats;
 
 // Create smoke image
 var smoke = new Image();
-smoke.src = "smoke.png";
+smoke.src = "images/smoke.png";
 
+var base_level1 = new Image();
+base_level1.src = "images/base_level1.svg";
+var base_level2 = new Image();
+base_level2.src = "images/base_level2.svg";
+var base_level3 = new Image();
+base_level3.src = "images/base_level3.svg";
+
+// Gather cookie data
+if(getCookie("userMarker") == "true") {
+	display.legacyPlanetMarker = true;
+	document.getElementById("planetMarker").checked = true;
+	//console.log("true")
+} else {
+	display.legacyPlanetMarker = false;
+	document.getElementById("planetMarker").checked = false;
+	//console.log("false: " + getCookie("userMarker"));
+}
+if(getCookie("userPerformance") == "true") {
+	display.performanceMode = true;
+	document.getElementById("performance").checked = true;
+} else {
+	display.performanceMode = false;
+	document.getElementById("performance").checked = false;
+}
+
+// Names
 var resourceTypes = ["Iron", "Copper", "Lead", "Kanium"];
 
 var solarSystem = ["Mercury", "Venus", "Earth", "Mars", "Jupiter", "Saturn", "Uranus", "Neptune", "Pluto"];
@@ -69,6 +101,7 @@ function addStats() {
     stats.push(new Stats("Zoom", display, "zoom", 2));
     stats.push(new Stats("Angular Velocity", rocket, "angularVelocity", 2));
     stats.push(new Stats("Angle from Planet", rocket, "angleFromPlanet", 2));
+    stats.push(new Stats("Rocket Integrity", rocket, "integrity"));
 }
 
 // Functions
@@ -79,5 +112,85 @@ function updateZoom(rocket) {
 
 		display.smoothZoom.length = 100; // Smoothness of zoom transition
 		display.zoom = Math.max(display.minZoom, display.smoothZoom.reduce((a, b) => a + b, 0)/display.smoothZoom.length);
+	}
+}
+
+$("#begin").click(function () {
+	var title = document.getElementById("title");
+	title.style.display = 'none'
+	spawnPlayer();
+})
+
+$("#spec").click(function () {
+	var title = document.getElementById("title");
+	title.style.display = 'none'
+	display.play = 2;
+})
+
+
+function spawnPlayer() {
+
+	cookieGetter();
+
+	let rocketData = {
+
+		socketId: socket.id,
+		serverId: server.id,
+		name: $("#name").val() || "Player",
+		color: document.getElementById("color").value
+	}
+
+	socket.emit('joinServer', rocketData);
+	display.play = 0;
+	rocket.respawn();
+	display.spectate = false;
+	rocket.color = document.getElementById("color").value;
+}
+
+function cookieGetter() {
+
+	//Color cookie
+	let hexColor = $("#color").val();
+	if(getCookie('userColor') == "") {
+		console.log('Created color cookie with value: ' + JSON.stringify(hexColor))
+		cname = 'userColor';
+		cvalue = JSON.stringify(hexColor);
+		exdays = 365;
+		setCookie(cname,cvalue,exdays);
+	}
+	console.log(JSON.stringify(hexColor) + ' / ' + getCookie('userColor'));
+	if(JSON.stringify(hexColor) != getCookie('userColor')) {
+		console.log('Deleted color cookie with value: ' + getCookie('userColor'));
+		deleteCookie('userColor');
+		console.log('Created color cookie with value: ' + JSON.stringify(hexColor));
+		cname = 'userColor';
+		cvalue = JSON.stringify(hexColor);
+		exdays = 365;
+		setCookie(cname,cvalue,exdays);
+	}
+
+	//Name cookie
+	let userName = $("#name").val();
+	let letterNumber = /^[0-9a-zA-Z]+$/;
+	if(($("#name").val()).match(letterNumber)) {
+	 	if(getCookie('userName') == "") {
+			console.log('Created name cookie with value: ' + JSON.stringify(userName))
+			cname = 'userName';
+			cvalue = JSON.stringify(userName);
+			exdays = 365;
+			setCookie(cname,cvalue,exdays);
+		}
+		console.log(JSON.stringify(userName) + ' / ' + getCookie('userName'));
+		if(JSON.stringify($("#name").val()) != getCookie('userName')) {
+			console.log('Deleated name cookie with value: ' + getCookie('userName'));
+			deleteCookie('userName');
+			console.log('Created name cookie with value: ' + JSON.stringify(userName));
+			cname = 'userName';
+			cvalue = JSON.stringify(userName);
+			exdays = 365;
+			setCookie(cname,cvalue,exdays);
+		}
+	} else {
+	   //alert("Please only use alphanumeric characters without spaces!"); 
 	}
 }

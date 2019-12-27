@@ -50,6 +50,12 @@ rl.on('line', (input) => {
   	}
 });
 
+// Send client refresh
+io.emit('refresh', '');
+io.emit('console', 'The game has updated, please hard refresh the code using ctrl-f5 to continue playing the game.')
+
+// Server Class
+var resourceTypes = ["Iron", "Copper", "Lead", "Kanium"];
 var servers = [];
 let serverUpdateRate = 20;
 let maxPlayers = 10;
@@ -57,39 +63,171 @@ let maxPlayers = 10;
 class Server {
 	constructor() {
 		this.players = {}; // Players are selected based on their socket id
-		this.map = new Map(30);
+		this.spectators = {};
+		this.projectiles = [];
+		this.map = new Map(50, 10000);
 		this.id = Function.randomString(10);
+
+		this.lastTick = Date.now();
+		this.bufferUpdateRate = [];
+		this.updateRate = 0;
 	}
 
-	addPlayer(socketId) {
-		this.players[socketId] = new Rocket();
+	addPlayer(socketId, name, color) {
+		this.players[socketId] = new Rocket(0, 200, 23000, 10, 27, name, color);
+	}
+
+	addSpectator(socketId) {
+		this.spectators[socketId] = new Spectator();
 	}
 
 	update() {
+		// Update server info - NEEDS TO BE HEAVILY OPTIMIZED
+		this.updateProjectiles();
+
 		for (let id in this.players) {
 			this.harvestPlanets(this.players[id]);
 
-			this.shootPlayers(this.players[id]);
+			this.shootAtPlayers(this.players[id]);
+
+			this.checkProjectiles(this.players[id], id);
+
+			this.collisionResponse(this.players[id]);
 		}
 
+		// Calculate the update rate of this server
+		this.bufferUpdateRate.push(Date.now()-this.lastTick);
+		this.lastTick = Date.now();
+		if (this.bufferUpdateRate.length > 30) {
+			this.bufferUpdateRate.shift();
+		}
+		this.updateRate = this.bufferUpdateRate.reduce((a, b) => a + b, 0)/this.bufferUpdateRate.length;
+
+		// Send data
 		for (let id in this.players) {
+			if (io.sockets.connected[id])
+				io.sockets.connected[id].emit('update', this);
+		}
+
+		for (let id in this.spectators) {
 			if (io.sockets.connected[id])
 				io.sockets.connected[id].emit('update', this);
 		}
 	}
 
-	shootPlayers(rocket) {
+	shootAtPlayers(rocket) {
 		let planets = this.map.planets;
 		for (let id in planets) {
 			let p = planets[id];
-			for (let t of p.turrets) {
-				t.update(this.players, p);
-				/*if (Function.dist(t.pos, rocket.pos) < 500) {
-					let direction = new Vector(rocket.pos.x, rocket.pos.y);
-					direction.sub(new Vector(t.pos.x, t.pos.y));
 
-					t.projectiles.push({angle: Math.atan2(direction.y, direction.x), time: Date.now()})
-				}*/
+			for (let i = p.turrets.length-1; i >= 0; i--) {
+				let t = p.turrets[i]
+				if (t.health <= 0) {
+					p.turrets.splice(i, 1);
+				} else {
+					t.update(this.players, p, io, this.projectiles);
+				}
+			}
+
+			for (let i = p.bases.length-1; i >= 0; i--) {
+				let t = p.bases[i]
+				if (t.health <= 0) {
+					p.bases.splice(i, 1);
+				} else {
+					t.update(this.players, p);
+				}
+			}
+		}
+	}
+
+	// Move the projectiles in the server
+	updateProjectiles() {
+		let planets = this.map.planets;
+		let delta = serverUpdateRate;
+		for (let i = this.projectiles.length-1; i >= 0; i--) {
+			let p = this.projectiles[i];
+
+			var old = Date.now() - p.time > 10000;
+			var newProjectile = Date.now() - p.time > 100;
+			var collision = false;
+
+			for (let id in planets) {
+				let p2 = planets[id];
+				if (Function.dist(p.pos, p2.pos) < p2.radius + 5 && newProjectile) {
+					collision = true;
+				}
+			}
+
+			// Collision with player
+			/*for (let id in this.players) {
+				let p3 = this.players[id];
+				if (Function.dist(p.pos, p3.pos) < 50 && newProjectile) {
+					collision = true;
+				}
+			}*/
+
+			if (Function.dist(new Vector(), p.pos) > this.map.mapRadius + 1000) { // out of bounds projectile
+				collision = true;
+			}
+
+			if (old || collision) {
+				this.projectiles.splice(i, 1);
+			}
+
+			var deltaPos = new Vector(p.heading.x, p.heading.y);
+			deltaPos.mult(delta);
+			p.pos.x += p.speed*deltaPos.x + p.vel.x*delta/1000;
+			p.pos.y += p.speed*deltaPos.y + p.vel.y*delta/1000;
+		}
+	}
+
+	// Check if rocket is outside of the map and tick off health
+	collisionResponse(rocket) {
+		if (Function.dist(new Vector(), rocket.pos) > this.map.mapRadius) {
+			rocket.integrity -= 0.2;
+		}
+	}
+
+	// Check for collision with rocket
+	checkProjectiles(rocket, id) {
+		let planets = this.map.planets;
+
+		for (let i = this.projectiles.length-1; i >= 0; i--) {
+			let p = this.projectiles[i];
+			let distance = Function.dist(p.pos, rocket.pos);
+			let collision = false;
+			if (distance < 5 + rocket.height && p.id != id) {
+				rocket.integrity -= 1;
+				collision = true;
+			}
+
+			for (let id in planets) {
+				let p2 = planets[id];
+				if (p2.name != "Earth") {
+					for (let j = p2.turrets.length-1; j >= 0; j--) {
+						let t = p2.turrets[j];
+						let d = Function.dist(p.pos, t.pos);
+
+						if (d < 40 && p.id != t.id) {
+							t.health -= 5;
+							collision = true;
+						}
+					}
+
+					for (let j = p2.bases.length-1; j >= 0; j--) {
+						let t = p2.bases[j];
+						let d = Function.dist(p.pos, t.pos);
+
+						if (d < 40 && p.id != t.id) {
+							t.health -= 5;
+							collision = true;
+						}
+					}
+				}
+			}
+
+			if (collision) {
+				this.projectiles.splice(i, 1);
 			}
 		}
 	}
@@ -101,7 +239,7 @@ class Server {
 			let p = planets[id];
 
 			let withinDist = Function.dist(p.pos, rocket.pos) < (p.radius + rocket.height);
-			if (withinDist && !rocket.crashed) {
+			if (withinDist && !rocket.crashed && rocket.fuel > 0 && rocket.integrity > 0 && rocket.oxygen > 0) {
 
 				// Mine resources
 				if (p.resource.amount > 0 && p.resource.type != "None") {
@@ -110,6 +248,9 @@ class Server {
 						p.resource.amount-rocket.miningSpeed*delta,
 						0
 					);
+
+
+
 					let resourceType = p.resource.type;
 					rocket.resources[resourceType] = Math.max(
 						rocket.resources[resourceType]+rocket.miningSpeed*delta,
@@ -121,9 +262,9 @@ class Server {
 					//io.emit('console', rocket.resources);
 
 					// Change planet properties
-					/*let lastRadius = p.radius;
+					let lastRadius = p.radius;
 					p.radius = p.maxRadius * (p.resource.amount/p.resource.totalAmount);
-					p.mass = p.maxMass * (Math.pow(p.radius, 2)/Math.pow(p.maxRadius, 2));*/
+					p.mass = p.maxMass * (Math.pow(p.radius, 2)/Math.pow(p.maxRadius, 2));
 
 					// Change player position to new planet radius
 
@@ -134,6 +275,13 @@ class Server {
 					deltaPos = Vector.rotate(deltaPos, rocket.angle+Math.PI/2);
 					deltaPos.mult(deltaRadius);
 					rocket.pos.add(deltaPos);*/
+
+					// Delete the planet once resources are fully depleted
+					if (p.radius <= 10) {
+						console.log("Deleting planet")
+						io.emit('delete', id);
+						delete planets[id];
+					}
 				}
 			}
 		}
@@ -142,7 +290,7 @@ class Server {
 
 servers.push(new Server());
 
-function findServer() {
+function queueServer() {
 
 	// Connect to server
 	let foundServer = false;
@@ -153,10 +301,20 @@ function findServer() {
 		}
 	}
 
-	//If no servers avaliable, create new sever
+	// If no servers avaliable, create new sever
 	if(!foundServer) {
 		servers.push(new Server());
 		return servers[servers.length-1];
+	}
+}
+
+function spectateServer() {
+	let foundServer = false;
+	for(let s of servers) {
+		if(Object.keys(s.players).length < maxPlayers) {
+			return s;
+			foundServer = true;
+		}
 	}
 }
 
@@ -201,17 +359,39 @@ function optimizeServers() {
 	}
 }
 
+class Spectator {
+	constructor() {
+		this.pos = new Vector();
+		this.vel = new Vector();
+	}
+}
+
 // Server-client connection architecture
 io.on('connection', function(socket) {
+
 	// Find a server
-	let server = findServer();
-	server.addPlayer(socket.id);
+	let server = spectateServer();
+	server.addSpectator(socket.id);
 
 	console.log('ID: ' + socket.id + ' connected to server ID: ' + server.id + ' on ' + Date())
 
 	socket.emit('init', server); // Send initial data
 
 	let timeoutId;
+
+
+	socket.on('joinServer', function (data) {
+
+		for (let i = 0; i < servers.length; i++) {
+			if(servers[i].id == data.serverId) {
+				servers[i].spectators[data.socketId] = undefined;
+				delete servers[i].spectators[data.socketId];
+				let server = queueServer();
+				server.addPlayer(socket.id, data.name, data.color);
+			}
+		}
+
+	});
 
 	socket.on('data', function (data) {
 		let player = server.players[socket.id];
@@ -229,9 +409,37 @@ io.on('connection', function(socket) {
 		}, 5000);
 	})
 
+	socket.on('respawn', function (data) {
+		let player = server.players[socket.id];
+
+		if (player) {
+			player.crashed = false;
+			player.steer = 0;
+
+			player.fuel = player.maxFuel;
+			player.oxygen = player.maxOxygen;
+
+			player.integrity = player.maxIntegrity;
+
+			if (player.resources) {
+				for (var i = 0; i < resourceTypes.length; i++) {
+					player.resources[resourceTypes[i]] = 0;
+				}
+			}
+		}
+	})
+
+	socket.on('projectile', function (data) {
+		data.time = Date.now();
+		server.projectiles.push(data);
+		io.emit('projectile', data);
+	})
+
 	socket.on('disconnect', function () {
 		io.emit('disconnection', socket.id);
+
 		delete server.players[socket.id];
+		delete server.spectators[socket.id];
 		console.log(socket.id + " left at "  + Date());
 	});
 

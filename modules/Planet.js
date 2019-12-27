@@ -2,6 +2,7 @@ var Vector = require('./Vector.js');
 var Resource = require('./Resource.js');
 var Function = require('./Function.js');
 var Turret = require('./Turret.js')
+var Base = require('./Base.js')
 
 module.exports = class Planet {
 	constructor(x, y, mass, radius, type, name = "Planet", color = "#c1440e", strokeColor) {
@@ -19,6 +20,9 @@ module.exports = class Planet {
 		// Name
 		this.name = name;
 
+		// Id
+		this.id = Function.randomString(5);
+
 		//Resources
 		
 		this.richness = Math.random();
@@ -27,7 +31,7 @@ module.exports = class Planet {
 			this.resource = new Resource("None");
 		} else if(name == "Black Hole"){
 			this.resource = new Resource("Singularium", 1000 * ((this.radius/300) + (this.richness))/2);
-		} else if(name == "Kanus Maximus"){
+		} else if(name == "Kanus Minimus"){
 			this.resource = new Resource("Kanium", 1000 * ((this.radius/300) + (this.richness))/2);
 		} else {
 			this.resource = new Resource(undefined, 1000 * ((this.radius/300) + (this.richness))/2);
@@ -46,27 +50,79 @@ module.exports = class Planet {
 		this.strokeColor = strokeColor || undefined;
 		this.maxStrokeColor = this.strokeColor;
 
-		let danger = (Function.randomG(5) - 0.25);
-		if(danger < 0) {
-			danger = 0.5 + (-danger);
-		}
-
-		this.danger = danger;
-
-		// Danger
-		this.danger = ((Math.random()) + (this.richness))/2;
-	
-		// Turrets
-
+		// Structures
 		this.turrets = [];
+		this.bases = [];
 
-		let turretCount = /*Math.floor(Math.max((this.danger-0.4)*20, 0))*/5;
-		if(this.danger == 1) {
-			let turretCount = 20;
+		// Planet danger system
+		this.danger = ((Math.random()) + (this.richness))/2;
+
+		// Minimum danger
+		let minimumBaseDanger = 0.5;
+		let minimumTurretDanger = 0.2;
+
+		// Set turret and base levels
+		let turrets = Math.floor(Math.max((this.danger-minimumTurretDanger)*20, 0));
+		let turretLevel = Function.randInt(1, 2);
+
+		let bases = Math.floor(this.danger/minimumBaseDanger);
+		let baseLevel = Math.round(this.danger*2.2);
+
+		// Extreme base 
+		if (Math.random() > 0.98) {
+		    this.danger = 1;
+		    turrets = 20;
+		    bases = 1;
+		    baseLevel = 3;
 		}
-		if (this.name != "Black Hole") {
-			for (let i = 0; i < turretCount; i++) {
-				this.turrets.push(new Turret(this, Function.random(0, 2*Math.PI)))
+		
+		// Spawn turrets and bases
+		if (this.name != "Black Hole" && this.name != "Earth") {
+			for (let i = 0; i < turrets; i++) {
+				let randAngle = Function.random(0, 2*Math.PI);
+				let spawnVector = Vector.rotate(new Vector(this.radius, 0), randAngle);
+				let pos = new Vector(this.pos.x+spawnVector.x, this.pos.y+spawnVector.y);
+
+				let collision = false;
+				for (let t of this.turrets) {
+					if (Function.dist(pos, t.pos) < 70) {
+						collision = true;
+					}
+				}
+
+				for (let t of this.bases) {
+					if (Function.dist(pos, t.pos) < 100) {
+						collision = true;
+					}
+				}
+
+				if (!collision) {
+					this.turrets.push(new Turret(this, randAngle, turretLevel));
+				}
+				
+			}
+			for (let i = 0; i < bases; i++) {
+				let randAngle = Function.random(0, 2*Math.PI);
+				let spawnVector = Vector.rotate(new Vector(this.radius, 0), randAngle);
+				let pos = new Vector(this.pos.x+spawnVector.x, this.pos.y+spawnVector.y);
+
+				let collision = false;
+				for (let t of this.turrets) {
+					if (Function.dist(pos, t.pos) < 70) {
+						collision = true;
+					}
+				}
+
+				for (let t of this.bases) {
+					if (Function.dist(pos, t.pos) < 100) {
+						collision = true;
+					}
+				}
+
+				if (!collision) {
+					this.bases.push(new Base(this, randAngle, baseLevel));
+				}
+				
 			}
 		}
 	}

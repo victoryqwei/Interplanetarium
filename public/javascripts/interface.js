@@ -22,38 +22,77 @@ class Interface {
 
 	drawInterface() {
 
-		// Interface
-		if (display.toggleInterface && rocket.showRocket) {
-			this.advancedKey(); // Display advanced rocket stats
-			this.drawClosestPlanetHUD(); // Draw the closest planet scale on the interface
-			this.drawClosestPlanetInfo(); // Draw the closest planet scale
-			this.drawDashboard(); // Bottom-left indicators of vitals
-			this.drawInventory(); // Draw the amount of resorces
+		if(display.play == 0) {
+
+			// Interface
+			if (display.toggleInterface && rocket.showRocket && rocket.resources) {
+				if (display.toggleHUD) { // Toggle everything that is not apart of the game
+					this.advancedKey(); // Display advanced rocket stats
+					this.drawClosestPlanetInfo(); // Draw the closest planet scale
+					this.drawTitle(); // Draw the title screen
+					this.drawPlayerName(); // Draw the players names
+				}
+				
+				this.drawClosestPlanetHUD(); // Draw the closest planet scale on the interface
+				this.drawDashboard(); // Bottom-left indicators of vitals
+				this.drawInventory(); // Draw the amount of resorces
+				this.drawMinimap(); // Draw the space map
+			}
+
 			this.drawOptions(); // Draw the game options
-			this.drawMinimap(); // Draw the space map
-			this.drawServer();
-			this.drawTitle();
+			if(display.advanced) {
+				this.drawServer();
+			}
+		}
+
+		if(server.players && server.id && display.spectate) {
+			this.drawSpectateText();
+		}
+	}
+
+	drawSpectateText() {
+		drawText("Viewing: " + server.id + " (" + Object.keys(server.players).length + "/10)", canvas.width/2, canvas.height - 40, "15px Arial", "white", "center", "middle");
+	}
+
+	drawPlayerName() {
+		var zoom = display.zoom;
+		for (let id in server.players) {
+			let player = server.players[id];
+			if(id != socket.id && inScreen(player.pos, 1, 20)) {
+				drawText(player.name, player.pos.x*zoom - rocket.pos.x*zoom + canvas.width/2, player.pos.y*zoom - rocket.pos.y*zoom + canvas.height/2 - 20, "18px Arial", "white", "center", "middle");
+			}
 		}
 	}
 
 	drawServer() {
 		if (server.players) {
 			drawText("Server: " + server.id, canvas.width - 10, 20, "18px Arial", "white", "right", "middle");
-			drawText("Client: " + socket.id, canvas.width - 10, 42, "18px Arial", "white", "right", "middle");
-			drawText("Players: " + Object.keys(server.players).length + " / 10", canvas.width - 10, 80, "18px Arial", "white", "right", "middle");
+			drawText("Server Update Rate: " + round(server.updateRate, 1), canvas.width - 10, 42, "18px Arial", "white", "right", "middle");
+			drawText("Client: " + socket.id, canvas.width - 10, 64, "18px Arial", "white", "right", "middle");
+			drawText("Players: " + Object.keys(server.players).length + " / 10", canvas.width - 10, 86, "18px Arial", "white", "right", "middle");
+
 			for (let i = 0; i < Object.keys(server.players).length; i++) {
-				drawText(i+1 + ". " + Object.keys(server.players)[i], canvas.width - 10, 100 + 20*i, "18px Arial", "white", "right", "middle");
+				drawText(i+1 + ". " + Object.keys(server.players)[i], canvas.width - 10, 108 + 20*i, "18px Arial", "white", "right", "middle");
+			}	
+		}
+		if (server.spectators) {
+			drawText("Spectators: ", canvas.width - 10, 120 + 20*Object.keys(server.players).length, "18px Arial", "white", "right", "middle");
+			for (let i = 0; i < Object.keys(server.spectators).length; i++) {
+				drawText(i+1 + ". " + Object.keys(server.spectators)[i], canvas.width - 10, 140 + 20*i + 20*Object.keys(server.players).length, "18px Arial", "white", "right", "middle");
 			}
 		}
+		
 	}
 
 	drawInventory() {
 
 		let labelSpacing = (this.HUDheight - this.HUDpadding*2)/resourceTypes.length;
-		let textSize = 12*display.interfaceScale;
+		let textSize = 14*display.interfaceScale;
+		let titleSize = 17*display.interfaceScale;
 		let numberSize = 20*display.interfaceScale;
-
-		let inventorySize = (this.HUDwidth/2 - this.HUDpadding*3)/2
+		let barSpacing = 8*display.interfaceScale;
+		let barHeight = (this.HUDheight/2 - barSpacing/2*4)/4;
+		let inventorySize = (this.HUDwidth/2 - this.HUDpadding*3.8)/2
 
 		// RECT
 		let rectOptions = {
@@ -62,45 +101,85 @@ class Interface {
 		}
 
 		// Draw minimap center (player)
-		drawRoundedRect(canvas.width - this.HUDwidth*1.5 - this.viewPadding*1.5, canvas.height - this.HUDheight - this.viewPadding, this.HUDwidth/2, this.HUDheight, 5, "grey", rectOptions);
+		drawRoundedRect(canvas.width - this.HUDwidth*1.5 - this.viewPadding*1.5 - this.HUDpadding/2, canvas.height - this.HUDheight - this.viewPadding, this.HUDwidth/4*2 + this.HUDpadding/2, this.HUDheight, 5, "grey", rectOptions);
 
 		let inventoryOptions = {
-			alpha: 0.2,
+			alpha: 1,
 			outline: true,
-			fill: false
+			fill: false,
+			outlineColor: "grey"
 		}
 
 		// Draw the inventory slots
-		drawRectangle(canvas.width - this.HUDwidth*1.5 - this.viewPadding*1.5 + this.HUDpadding, canvas.height - this.HUDheight - this.viewPadding + this.HUDpadding, inventorySize, inventorySize, "grey", inventoryOptions);
-		drawRectangle(canvas.width - this.HUDwidth*1.5 - this.viewPadding*1.5 + this.HUDpadding*2 + inventorySize, canvas.height - this.HUDheight - this.viewPadding + this.HUDpadding, inventorySize, inventorySize, "grey", inventoryOptions);
-		drawRectangle(canvas.width - this.HUDwidth*1.5 - this.viewPadding*1.5 + this.HUDpadding, canvas.height - this.HUDheight - this.viewPadding + this.HUDpadding*2 + inventorySize, inventorySize, inventorySize, "grey", inventoryOptions);
-		drawRectangle(canvas.width - this.HUDwidth*1.5 - this.viewPadding*1.5 + this.HUDpadding*2 + inventorySize, canvas.height - this.HUDheight - this.viewPadding + this.HUDpadding*2 + inventorySize, inventorySize, inventorySize, "grey", inventoryOptions);
+		drawRectangle(canvas.width - this.HUDwidth*1.5 - this.viewPadding*1.8 + this.HUDpadding/2, canvas.height - this.HUDheight - this.viewPadding*1.3 + this.HUDpadding, inventorySize, inventorySize, "grey", inventoryOptions);
+		drawText("Level",
+			canvas.width - this.HUDwidth*1.5 - this.viewPadding*1.8 + this.HUDpadding/2 + inventorySize/2,
+			canvas.height - this.HUDheight - this.viewPadding*1.3 + this.HUDpadding + inventorySize/2.9,
+			titleSize + "px Arial", "white", "center", "middle");
+		drawText("1",
+			canvas.width - this.HUDwidth*1.5 - this.viewPadding*1.8 + this.HUDpadding/2 + inventorySize/2,
+			canvas.height - this.HUDheight - this.viewPadding*1.3 + this.HUDpadding + inventorySize/1.5,
+			titleSize + "px Arial", "white", "center", "middle");
 
-		// Draw the resource text
-		for (let i = 0; i < 2; i++) {
-			drawText(resourceTypes[i].toUpperCase(),
-			canvas.width - this.HUDwidth*1.5 - this.viewPadding*1.5 + this.HUDpadding + inventorySize/2 + inventorySize*i + this.HUDpadding*i,
-			canvas.height - this.HUDheight - this.viewPadding + this.HUDpadding*1.2,
-			textSize + "px Arial", "#d1d1d1", "center", "top");
-		}
-		for (let i = 0; i < 2; i++) {
-			drawText(resourceTypes[i+2].toUpperCase(),
-			canvas.width - this.HUDwidth*1.5 - this.viewPadding*1.5 + this.HUDpadding + inventorySize/2 + inventorySize*i + this.HUDpadding*i,
-			canvas.height - this.HUDheight - this.viewPadding + this.HUDpadding*2.2 + inventorySize,
-			textSize + "px Arial", "#d1d1d1", "center", "top");
+		// Draw the rocket level statistics
+		let rocketStats = ["Speed", "Resistance", "Damage"];
+
+		for (let i = 0; i < 3; i++) {
+		drawText(rocketStats[i],
+			canvas.width - this.HUDwidth*1.5 - this.viewPadding*1.4 + this.HUDpadding/2 + inventorySize,
+			canvas.height - this.HUDheight - this.viewPadding*(1.6-(i*0.65)) + this.HUDpadding + inventorySize/3,
+			textSize + "px Arial", "white", "left", "middle");
+		drawText(rocket.statistics[rocketStats[i].toLowerCase()],
+			canvas.width - this.HUDwidth - this.viewPadding*2.2,
+			canvas.height - this.HUDheight - this.viewPadding*(1.6-(i*0.65)) + this.HUDpadding + inventorySize/3,
+			textSize + "px Arial", "white", "right", "middle");
 		}
 
-		for (let i = 0; i < 2; i++) {
-			drawText(abbreviateNumber(Math.floor(rocket.resources[resourceTypes[i]])),
-			canvas.width - this.HUDwidth*1.5 - this.viewPadding*1.5 + this.HUDpadding + inventorySize/2 + inventorySize*i + this.HUDpadding*i,
-			canvas.height - this.HUDheight - this.viewPadding + inventorySize/2 + this.HUDpadding,
-			numberSize + "px Arial", "white", "center", "top");
-		}
-		for (let i = 0; i < 2; i++) {
-			drawText(abbreviateNumber(Math.floor(rocket.resources[resourceTypes[i+2]])),
-			canvas.width - this.HUDwidth*1.5 - this.viewPadding*1.5 + this.HUDpadding + inventorySize/2 + inventorySize*i + this.HUDpadding*i,
-			canvas.height - this.HUDheight - this.viewPadding + inventorySize*1.5 + this.HUDpadding*2,
-			numberSize + "px Arial", "white", "center", "top");
+		// Draw the resource bars for leveling up
+		
+		let statisticRequirements = {
+			Iron: 100, 
+			Copper: 50, 
+			Kanium: 10, 
+			Lead: 20
+		};
+
+		for (let i = 0; i < 4; i++) {
+			// Draw the resource progress outline
+			let barOptions = {alpha: 1, outline: false, fill: true, outlineColor: "white"};
+			drawRectangle(canvas.width - this.HUDwidth*1.5 - this.viewPadding*1.8 + this.HUDpadding/2,
+				canvas.height - this.HUDheight - this.viewPadding*1.3 + inventorySize + barHeight*i + barSpacing*i + this.HUDpadding*1.4,
+			this.HUDwidth/2-this.viewPadding/2, barHeight, "#1D192F", barOptions);
+			
+			barOptions = {alpha: 1, outline: false, fill: true};
+
+			// Draw the resource progress bar
+			if(Math.floor(rocket.resources[resourceTypes[i]]) >= statisticRequirements[resourceTypes[i]]) {
+				drawRectangle(canvas.width - this.HUDwidth*1.5 - this.viewPadding*1.8 + this.HUDpadding/2,
+					canvas.height - this.HUDheight - this.viewPadding*1.3 + inventorySize + barHeight*i + barSpacing*i + this.HUDpadding*1.4,
+				this.HUDwidth/2-this.viewPadding/2, barHeight, "#358f38", barOptions);
+			} else {
+				drawRectangle(canvas.width - this.HUDwidth*1.5 - this.viewPadding*1.8 + this.HUDpadding/2,
+					canvas.height - this.HUDheight - this.viewPadding*1.3 + inventorySize + barHeight*i + barSpacing*i + this.HUDpadding*1.4,
+				(this.HUDwidth/2-this.viewPadding/2)*Math.abs(rocket.resources[resourceTypes[i]])/statisticRequirements[resourceTypes[i]], barHeight, "#4d4d4d", barOptions);
+			}
+		
+			// Draw the resource progress text
+			if(Math.floor(rocket.resources[resourceTypes[i]]) >= statisticRequirements[resourceTypes[i]]) {
+			drawCheckmark(canvas.width - this.HUDwidth*1.5 - this.viewPadding*1.8 + this.HUDpadding/2 + (this.HUDwidth/2-this.viewPadding/2)/2,
+				canvas.height - this.HUDheight - this.viewPadding*1.3 + inventorySize + barHeight*i + barSpacing*i + this.HUDpadding*1.4 + barHeight/2 - 1, 3*display.interfaceScale, 3*display.interfaceScale)
+			} else {
+				drawText(resourceTypes[i] + " " + Math.floor(rocket.resources[resourceTypes[i]]) + " / " + statisticRequirements[resourceTypes[i]],
+					canvas.width - this.HUDwidth*1.5 - this.viewPadding*1.8 + this.HUDpadding/2 + (this.HUDwidth/2-this.viewPadding/2)/2,
+					canvas.height - this.HUDheight - this.viewPadding*1.3 + inventorySize + barHeight*i + barSpacing*i + this.HUDpadding*1.4 + barHeight/2,
+					textSize + "px Arial", "white", "center", "center");
+			}
+		
+			barOptions = {alpha: 1, outline: true, fill: false, outlineColor: "white"};
+		
+			drawRectangle(canvas.width - this.HUDwidth*1.5 - this.viewPadding*1.8 + this.HUDpadding/2,
+				canvas.height - this.HUDheight - this.viewPadding*1.3 + inventorySize + barHeight*i + barSpacing*i + this.HUDpadding*1.4,
+			this.HUDwidth/2-this.viewPadding/2, barHeight, "#1D192F", barOptions);
 		}
 	}
 
@@ -113,14 +192,42 @@ class Interface {
 				optionsToggle = true;
 				display.options = !display.options;
 			}
-		} else {
+		} else { // Look at this T flip-flop
 			if (optionsToggle) {
 				optionsToggle = false;
 			}
 		}
 
+		if(display.options) {
+			display.toggleHUD = false;
+		} else {
+			display.toggleHUD = true;
+		}
+
+		var planetMarker = document.getElementById("planetMarker");
+		
+
+		if(planetMarker.checked) {
+			display.legacyPlanetMarker = true;
+			updateCookie("userMarker", true);
+		} else {
+			display.legacyPlanetMarker = false;
+			updateCookie("userMarker", false);
+		}
+
+		var performance = document.getElementById("performance");
+		
+
+		if(performance.checked) {
+			display.performanceMode = true;
+			updateCookie("userPerformance", true);
+		} else {
+			display.performanceMode = false;
+			updateCookie("userPerformance", false);
+		}
+
 		// Set options visibility
-		var options = document.getElementById("options-container");
+		var options = document.getElementById("settings");
 
 		// Change visibility
 		if(display.options) {
@@ -187,6 +294,17 @@ class Interface {
 			ctx.fill();
 			ctx.closePath();
 
+			let options = {
+				fill: false,
+				outline: true,
+				outlineWidth: 3, 
+				outlineColor: "white",
+				alpha: 1
+			}
+
+			drawCircle((canvas.width - this.HUDwidth - this.viewPadding + this.HUDpadding + this.planetSize/2) + ((0 - rocket.pos.x) / mapZoom),
+					(canvas.height - this.HUDheight - this.viewPadding + this.HUDpadding + this.planetSize/2) + ((0 - rocket.pos.y) / mapZoom), server.map.mapRadius/mapZoom, "white", options);
+
 			// Draw the planets
 			for (let id in planets) {
 				let p = planets[id];
@@ -226,7 +344,7 @@ class Interface {
 			})
 
 			// Display List
-			for (let i = 0; i < 5; i++) {
+			for (let i = 0; i < Math.min(Object.keys(server.map.planets).length, 5); i++) {
 				let p = planets[keysSorted[i]];
 				let distance = Math.max(0, round(planetDist(rocket, p)));
 				drawText(
@@ -236,7 +354,7 @@ class Interface {
 					textSize + "px Arial", "white", "left", "top"
 				);
 			}
-			for (let i = 0; i < 5; i++) {
+			for (let i = 0; i < Math.min(Object.keys(server.map.planets).length, 5); i++) {
 				let p = planets[keysSorted[i]];
 				let distance = Math.max(0, round(planetDist(rocket, p)));
 				drawText(
@@ -263,7 +381,7 @@ class Interface {
 
 		// BAR
 		let labelSpacing = this.planetSize/4;
-		let barSize = (this.HUDwidth/2 - this.HUDpadding/2*4)/3;
+		let barSize = (this.HUDwidth/2 - this.HUDpadding/2*4)/4;
 
 		let textSize = 15*display.interfaceScale;
 
@@ -273,14 +391,13 @@ class Interface {
 		}
 
 		// Background HUD
-		drawRoundedRect(this.viewPadding*1.5 + this.HUDwidth, canvas.height - this.viewPadding - this.HUDheight, this.HUDwidth/2, this.HUDheight, 5, "grey", rectOptions);
+		drawRoundedRect(this.viewPadding*1.5 + this.HUDwidth, canvas.height - this.viewPadding - this.HUDheight, this.HUDwidth/4*2 + this.HUDpadding/2, this.HUDheight, 5, "grey", rectOptions);
 
 		// Fuel
-		var XOffset = 50;
 		var options = {
 			outline: true,
 			outlineWidth: 2,
-			outlineColor: pSBC(-0.1, "#808080", false, true),
+			outlineColor: pSBC(-0.1, "#767652", false, true),
 			fill: false,
 			alpha: 0.5
 		}
@@ -288,22 +405,21 @@ class Interface {
 		// Draw fuel bar
 		drawRectangle(this.viewPadding*1.5 + this.HUDwidth + this.HUDpadding/2,
 		canvas.height - this.viewPadding - this.HUDpadding/2,
-		barSize, -this.HUDheight + this.HUDpadding/2*2, "#808080", options);
+		barSize, -this.HUDheight + this.HUDpadding/2*2, "#767652", options);
 		drawRectangle(this.viewPadding*1.5 + this.HUDwidth + this.HUDpadding/2,
 		canvas.height - this.viewPadding - this.HUDpadding/2,
-		barSize, (-this.HUDheight + this.HUDpadding/2*2)*Math.abs(rocket.fuel)/rocket.maxFuel, "#808080");
+		barSize, (-this.HUDheight + this.HUDpadding/2*2)*Math.abs(rocket.fuel)/rocket.maxFuel, "#767652");
 
 		// Draw fuel text
 		ctx.save();
 		ctx.beginPath();
 		ctx.translate(this.viewPadding*1.5 + this.HUDwidth + this.HUDpadding/2, canvas.height - this.viewPadding - this.HUDpadding/2);
 		ctx.rotate(270 * Math.PI / 180);
-		drawText("FUEL", 30*display.interfaceScale, barSize/2, textSize + "px Arial", "#292929", "center", "middle");
+		drawText("FUEL", 75*display.interfaceScale, barSize/2, textSize + "px Arial", "#292929", "center", "middle");
 		ctx.closePath();
 		ctx.restore();
 
 		// Oxygen
-		var yOffset = 120;
 		var options = {
 			outline: true,
 			outlineWidth: 2,
@@ -325,12 +441,37 @@ class Interface {
 		ctx.beginPath();
 		ctx.translate(this.viewPadding*1.5 + this.HUDwidth + this.HUDpadding/2*2 + barSize, canvas.height - this.viewPadding - this.HUDpadding/2);
 		ctx.rotate(270 * Math.PI / 180);
-		drawText("OXYGEN", 40*display.interfaceScale, barSize/2, textSize + "px Arial", "#292929", "center", "middle");
+		drawText("OXYGEN", 75*display.interfaceScale, barSize/2, textSize + "px Arial", "#292929", "center", "middle");
+		ctx.closePath();
+		ctx.restore();
+
+		// Integrity
+		var options = {
+			outline: true,
+			outlineWidth: 2,
+			outlineColor: pSBC(-0.1, "#808080", false, true),
+			fill: false,
+			alpha: 0.5
+		}
+
+		// Draw integrity bar
+		drawRectangle(this.viewPadding*1.5 + this.HUDwidth + this.HUDpadding/2*3 + barSize*2,
+		canvas.height - this.viewPadding - this.HUDpadding/2,
+		barSize, -this.HUDheight + this.HUDpadding/2*2, "#808080", options);
+		drawRectangle(this.viewPadding*1.5 + this.HUDwidth + this.HUDpadding/2*3 + barSize*2,
+		canvas.height - this.viewPadding - this.HUDpadding/2,
+		barSize, (-this.HUDheight + this.HUDpadding/2*2)*Math.abs(rocket.integrity)/rocket.maxIntegrity, "#808080");
+
+		// Draw integrity text
+		ctx.save();
+		ctx.beginPath();
+		ctx.translate(this.viewPadding*1.5 + this.HUDwidth + this.HUDpadding/2*3 + barSize*2, canvas.height - this.viewPadding - this.HUDpadding/2);
+		ctx.rotate(270 * Math.PI / 180);
+		drawText("INTEGRITY", 75*display.interfaceScale, barSize/2, textSize + "px Arial", "#292929", "center", "middle");
 		ctx.closePath();
 		ctx.restore();
 
 		// Thrust
-		var yOffset = 190;
 		var options = {
 			outline: true,
 			outlineWidth: 2,
@@ -340,19 +481,19 @@ class Interface {
 		}
 
 		// Draw thrust bar
-		drawRectangle(this.viewPadding*1.5 + this.HUDwidth + this.HUDpadding/2*3 + barSize*2,
+		drawRectangle(this.viewPadding*1.5 + this.HUDwidth + this.HUDpadding/2*4 + barSize*3,
 		canvas.height - this.viewPadding - this.HUDpadding/2,
 		barSize, -this.HUDheight + this.HUDpadding/2*2, "#e0982b", options);
-		drawRectangle(this.viewPadding*1.5 + this.HUDwidth + this.HUDpadding/2*3 + barSize*2,
+		drawRectangle(this.viewPadding*1.5 + this.HUDwidth + this.HUDpadding/2*4 + barSize*3,
 		canvas.height - this.viewPadding - this.HUDpadding/2,
 		barSize, (-this.HUDheight + this.HUDpadding/2*2)*Math.abs(rocket.thrust)/rocket.maxThrust, "#e0982b");
 
 		// Draw thrust text
 		ctx.save();
 		ctx.beginPath();
-		ctx.translate(this.viewPadding*1.5 + this.HUDwidth + this.HUDpadding/2*3 + barSize*2, canvas.height - this.viewPadding - this.HUDpadding/2);
+		ctx.translate(this.viewPadding*1.5 + this.HUDwidth + this.HUDpadding/2*4 + barSize*3, canvas.height - this.viewPadding - this.HUDpadding/2);
 		ctx.rotate(270 * Math.PI / 180);
-		drawText("THRUST", 40*display.interfaceScale, barSize/2, textSize + "px Arial", "#292929", "center", "middle");
+		drawText("THRUST", 75*display.interfaceScale, barSize/2, textSize + "px Arial", "#292929", "center", "middle");
 		ctx.closePath();
 		ctx.restore();
 	}
@@ -364,11 +505,15 @@ class Interface {
 		var planetPos;
 
 		// Cycle through planets
+
+		let planetCount = 0
 		for (let id in planets) {
 			let p = planets[id];
-
 			if (display.zoom < 1 && inScreen(p.pos, 1, p.radius)) { // Make sure the rocket is in space
-
+				planetCount++
+				if(display.performanceMode && planetCount == 3) {
+					break
+				}
 				// Set planet position and distance
 				planetPos = Vector.mult(p.pos, display.zoom);
 				var distance = dist(p.pos, rocket.pos) - p.radius - rocket.height/2;
@@ -406,41 +551,39 @@ class Interface {
 
 				// Draw descriptive text
 				ctx.beginPath();
+
+				let textColor = "white";
+				if(p.danger == 1) {
+					textColor = "#a60b00";
+				}
+
 				drawText(
 					p.name,
 					planetPos.x - rocketPos.x + canvas.width/2 + textDir.x*(p.radius)*display.zoom + textDir.x*60*display.zoom,
 					planetPos.y - rocketPos.y + canvas.height/2 + textDir.y*(p.radius)*display.zoom - 40*display.zoom,
-					60*display.zoom + "px Arial", "white", textAlign, "middle");
+					60*display.zoom + "px Arial", textColor, textAlign, "middle");
 				if(p.name == "Black Hole") {
 					drawText("Mass: UNKNOWN",
 						planetPos.x - rocketPos.x + canvas.width/2 + textDir.x*(p.radius)*display.zoom + textDir.x*60*display.zoom,
 						planetPos.y - rocketPos.y + canvas.height/2 + textDir.y*(p.radius)*display.zoom,
-						30*display.zoom + "px Arial", "white", textAlign, "middle");
+						30*display.zoom + "px Arial", textColor, textAlign, "middle");
 				} else {
-					if(p.danger == 1) {
-						drawText("Mass: " + round(p.mass, 0) + "kg | " + "★★★★★",
+					drawText("Mass: " + round(p.mass, 0) + "kg | " + "★".repeat(Math.ceil(round(p.danger*100, 0)/20)),
 						planetPos.x - rocketPos.x + canvas.width/2 + textDir.x*(p.radius)*display.zoom + textDir.x*60*display.zoom,
 						planetPos.y - rocketPos.y + canvas.height/2 + textDir.y*(p.radius)*display.zoom,
-						30*display.zoom + "px Arial", "red", textAlign, "middle")
-					} else {
-						drawText("Mass: " + round(p.mass, 0) + "kg | " + "★".repeat(Math.ceil(round(p.danger*100, 0)/20)),
-						planetPos.x - rocketPos.x + canvas.width/2 + textDir.x*(p.radius)*display.zoom + textDir.x*60*display.zoom,
-						planetPos.y - rocketPos.y + canvas.height/2 + textDir.y*(p.radius)*display.zoom,
-						30*display.zoom + "px Arial", "white", textAlign, "middle")
-					}
-					
+						30*display.zoom + "px Arial", textColor, textAlign, "middle");
 				}
 				if(distance/1000 > 1) {
 					drawText(round(distance/1000, 2) + "km",
 						planetPos.x - rocketPos.x + canvas.width/2 + textDir.x*(p.radius)*display.zoom + textDir.x*60*display.zoom,
 						planetPos.y - rocketPos.y + canvas.height/2 + textDir.y*(p.radius)*display.zoom + 40*display.zoom,
-						50*display.zoom + "px Arial", "white", textAlign, "middle");
+						50*display.zoom + "px Arial", textColor, textAlign, "middle");
 					ctx.closePath();
 				} else {
 					drawText(round(Math.max(distance, 0)) + "m",
 						planetPos.x - rocketPos.x + canvas.width/2 + textDir.x*(p.radius)*display.zoom + textDir.x*60*display.zoom,
 						planetPos.y - rocketPos.y + canvas.height/2 + textDir.y*(p.radius)*display.zoom + 40*display.zoom,
-						50*display.zoom + "px Arial", "white", textAlign, "middle");
+						50*display.zoom + "px Arial", textColor, textAlign, "middle");
 					ctx.closePath();
 				}
 

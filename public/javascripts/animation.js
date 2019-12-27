@@ -2,7 +2,12 @@
 // Create global animation variable
 var animation = {
 	animateSpawn: false,
-	spawnAnimationProperties: undefined
+	spawnAnimationProperties: undefined,
+	animateBorder: true,
+	outerBorderRadius: 0,
+	outerBorderAlpha: 1,
+	innerBorderRadius: 0,
+	innerBorderAlpha: -0.35
 }
 
 function animationLoop() {
@@ -11,6 +16,65 @@ function animationLoop() {
 	if(animation.animateSpawn) {
 		animateSpawnLoop();
 	}
+
+	// Animate spectating movement
+	animateSpectating();
+
+	// Animate border pulse
+	if(server.map) {
+		animation.animateBorder = getDistance(0, 0, rocket.pos.x, rocket.pos.y) > server.map.mapRadius - canvas.width/display.zoom;
+	}
+	if(animation.animateBorder && !display.performanceMode) {
+		animateBorder()
+	}
+
+}
+
+function animateBorder() {
+
+
+	let mapRadius;
+	if (server.map && server.map.mapRadius) {
+		mapRadius = server.map.mapRadius;
+	} else {
+		mapRadius = 10000;
+	}
+
+	var screenPos = getScreenPos(new Vector(), display.zoom);
+
+	// Outer border
+	if(animation.outerBorderAlpha >= -0.5) {
+		animation.outerBorderRadius += 0.1*delta;
+		animation.outerBorderAlpha -= 0.0005*delta;
+	}
+	if(animation.outerBorderAlpha <= -0.5) {
+		animation.outerBorderRadius = 0;
+		animation.outerBorderAlpha = 1;
+	}
+
+	// Inner border
+	if(animation.innerBorderAlpha >= -0.5) {
+		animation.innerBorderRadius += 0.05*delta;
+		animation.innerBorderAlpha -= 0.0005*delta;
+	} 
+	if(animation.innerBorderAlpha <= -0.5) {
+		animation.innerBorderRadius = 0;
+		animation.innerBorderAlpha = 1;
+	}
+
+	let options = {
+		fill: false,
+		outline: true,
+		outlineWidth: 10*display.zoom, 
+		outlineColor: "white",
+		alpha: 1
+	}
+
+	drawCircle(screenPos.x, screenPos.y, mapRadius*display.zoom, "white", options);
+	options.alpha = Math.max(animation.outerBorderAlpha, 0.0001);
+	drawCircle(screenPos.x, screenPos.y, (mapRadius+animation.outerBorderRadius)*display.zoom, "white", options);
+	options.alpha = Math.max(animation.innerBorderAlpha, 0.0001);
+	drawCircle(screenPos.x, screenPos.y, (mapRadius+animation.innerBorderRadius)*display.zoom, "white", options);
 }
 
 
@@ -58,4 +122,31 @@ function animateSpawnLoop() {
 		animation.animateSpawn = false;
 	}
 
+}
+
+let randPos = new Vector();
+
+function animateSpectating() {
+
+	if(display.spectate) {
+
+		if(Math.round(rocket.pos.x, 0) == Math.round(randPos.x, 0) && Math.round(rocket.pos.y, 0) == Math.round(randPos.y, 0)) {
+
+		randPos = Vector.rotate(new Vector(1, 0), random(2*Math.PI, 0));
+	    randPos.mult(random(2000, 0));
+
+		}
+
+		let dx = randPos.x - rocket.pos.x;
+		let dy = randPos.y - rocket.pos.y;
+		let angle = Math.atan2(dy, dx)
+
+		rocket.pos.x += 1 * Math.cos(angle);
+		rocket.pos.y += 1 * Math.sin(angle);
+
+	} else {
+		display.triggerSpectate = false;
+		//clearInterval(moveCamera);
+	}
+	
 }
