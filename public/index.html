@@ -12,41 +12,53 @@ Created by Victor Wei and Evan Cowan
 		<meta charset=utf-8>
 		<title>Interplanetarium</title>
 		<link rel="icon" href="images/favicon.png">
-		<link rel="stylesheet" taype="terext/css" href="stylesheets/menu.css">
+		<link rel="stylesheet" type="text/css" href="stylesheets/menu.css">
+		<link rel="stylesheet" type="text/css" href="stylesheets/ui.css">
 		<script>
 			document.cookie = 'cross-site-cookie=bar; SameSite=Strict';
 		</script>
+		<script src="https://unpkg.com/wavesurfer.js"></script>
 		<style>
 			body { margin: 0; overflow: hidden}
 			canvas {
 				z-index: 0;
 			}
-		</style>	
+		</style>
+
 	</head>
 	
 	<div id="title">
-		
+		<div id="waveform" style="display: none"></div>
+		<img src="images/title.svg" id="title-text">
+		<img src="images/launch.svg" id="subtitle-text">
 	</div>
 
-	<body oncontextmenu="return false; " style="background-color:black;">
-		<canvas id="canvas"></canvas>
+	<body oncontextmenu="return false; " style="background-color:black; z-index: 0;">
+		
+
+		<canvas id="game-canvas"></canvas>
+
+		<div id="minimap-container">
+			<canvas id="minimap-canvas"></canvas>
+		</div>
+
+		<canvas id="interface-canvas"></canvas>
 
 		<!-- Util -->
 		<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
 		<script src="https://cdn.jsdelivr.net/npm/ola"></script>
 		<script src="javascripts/util/socket.io.js"></script>
+		<script src="javascripts/util/util.js"></script>
 		<script src="javascripts/util/helper.js"></script>
 		<script src="javascripts/util/cookie.js"></script>
 
-		<!-- Player Files -->
-		<!-- <script src="javascripts/player/Rocket.js"></script> -->
-
 		<!-- UI Files -->
-		<script src="javascripts/ui/menu.js"></script>
+		<script type="module" src="javascripts/ui/menu.js"></script>
 
 		<!-- Game Files -->
-		<script src="javascripts/game/main.js"></script>
-		<script src="javascripts/game/draw.js"></script>
-		<script src="javascripts/game/event.js"></script>
+		<script type="module" src="javascripts/game/input.js"></script>
+		<script type="module" src="javascripts/game/event.js"></script>
+
+		<script type="module" src="javascripts/game/main.js"></script>\
 	</body>
 </html>

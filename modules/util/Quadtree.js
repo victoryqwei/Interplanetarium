@@ -1,5 +1,5 @@
-var Function = require('./Function.js');
 var Vector = require('./Vector.js');
+var Function = require('./Util.js');
 var Particle = require('./Particle.js');
 var Rectangle = require('./Rectangle.js');
 var Circle = require('./Circle.js');

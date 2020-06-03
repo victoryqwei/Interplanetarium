@@ -1,3 +1,43 @@
+function drawTrapezoid(x, y, w, h, i) {
+	ctx.save();
+    ctx.beginPath();
+    ctx.moveTo(x + i, y);
+    ctx.lineTo(x - i + w, y);
+    ctx.lineTo(x + w, y + h);
+    ctx.lineTo(x, y + h);
+    ctx.lineTo(x + i, y);
+    ctx.lineTo(x - i + w, y);
+
+    ctx.lineJoin = "miter";
+	ctx.strokeStyle = "white";
+	ctx.lineWidth = 7;
+    ctx.stroke();
+    ctx.closePath();
+    ctx.restore();
+}
+
+
+function drawPolygon(x, y, r, s, c, options) {
+
+	if (!options)
+	options = {};
+
+	ctx.save();
+	ctx.beginPath();
+	ctx.moveTo (x +  r * Math.cos(0), y +  r *  Math.sin(0));          
+
+	for (var i = 1; i <= s;i += 1) {
+	  ctx.lineTo (x + r * Math.cos(i * 2 * Math.PI / s), y + r * Math.sin(i * 2 * Math.PI / s));
+	}
+
+	ctx.lineJoin = "miter";
+	ctx.strokeStyle = c || "white";
+	ctx.lineWidth = 7;
+	ctx.stroke();
+    ctx.closePath();
+    ctx.restore();
+}
+
 function drawCircle(x, y, r, c, options) {
 	if (!options)
 		options = {};
@@ -8,7 +48,7 @@ function drawCircle(x, y, r, c, options) {
     ctx.fillStyle = c || 'red';
     ctx.globalAlpha = options.alpha || 1;
     if (options.glow)
-    	ctx.shadowBlur = 100;
+    	ctx.shadowBlur = options.glowWidth || 100;
     if (options.glowColor)
 		ctx.shadowColor = options.glowColor || 'aqua';
 	if (options.fill || options.fill == undefined)
@@ -30,7 +70,7 @@ function drawRectangle(x, y, w, h, c, options) {
 	ctx.translate(x, y);
 	ctx.beginPath();
 	ctx.rect(0, 0, w, h);
-	ctx.fillStyle = c || 'grey';
+	ctx.fillStyle = c || 'black';
 	ctx.globalAlpha = options.alpha || 1;
 	if (options.fill == undefined || options.fill)
 		ctx.fill();
@@ -47,6 +87,7 @@ function drawRect(x, y, w, h, d, c, options) {
 	if (!options)
 		options = {};
 
+	ctx.save();
 	ctx.translate(x, y)
 	ctx.rotate(d);
 	ctx.beginPath();
@@ -59,9 +100,13 @@ function drawRect(x, y, w, h, d, c, options) {
 
 	ctx.closePath();
 	ctx.resetTransform();
+	ctx.restore();
 }
 
 function drawRoundedRect(x, y, w, h, r, c, options) {
+	if (!options)
+		options = {};
+	
 	// Draw rounded rectangle
     ctx.beginPath();
     ctx.moveTo(x+r, y);
@@ -208,6 +253,8 @@ function drawArrow(x1, y1, x2, y2, thickness, color, alpha, cap){
 }
 
  function drawTriangle(x, y, base, height, angle, color) {
+ 	
+ 	ctx.save();
  	ctx.translate(x, y)
 	ctx.rotate(angle);
 	ctx.beginPath();
@@ -216,11 +263,18 @@ function drawArrow(x1, y1, x2, y2, thickness, color, alpha, cap){
     path.moveTo(-base/2,height/2);
     path.lineTo(0,-height/2);
     path.lineTo(base/2,height/2);
+    path.lineTo(-base/2,height/2);
+    path.lineTo(0,-height/2);
+    ctx.miterLimit = 10;
+    ctx.lineJoin = "miter";
+    ctx.lineWidth = 7;
     ctx.fillStyle = color || "black";
+    ctx.strokeStyle = color || "black";
     ctx.fill(path);
 
    	ctx.closePath();
 	ctx.resetTransform();
+	ctx.restore();
 }
 
 // Color
@@ -290,7 +344,7 @@ function constrain(value, a, b) {
 	}
 }
 
-function random(max, min) {
+function random(min, max) {
 	return Math.random() * (max - min) + min;
 }
 
@@ -463,18 +517,22 @@ function abbreviateNumber(value) {
     return newValue;
 }
 
-function inScreen(pos, relative, r) {
+const scale = (num, in_min, in_max, out_min, out_max) => {
+  return (num - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
+}
+
+function inScreen(pos, relative, r, rocketPos) {
 	var relative = relative || 1;
 	var pos = Vector.mult(pos, display.zoom);
 	let radius = (r || 0) * display.zoom;
-	var rocketPos = Vector.mult(rocket.pos, display.zoom / relative);
+	var rocketPos = Vector.mult(rocketPos, display.zoom / relative);
 
 	return pos.x > rocketPos.x - canvas.width/2 - radius && pos.x < rocketPos.x + canvas.width/2 + radius && pos.y > rocketPos.y - canvas.height/2 - radius && pos.y < rocketPos.y + canvas.height/2 + radius;
 }
 
 // Get screen pos
-function getScreenPos(absolutePos, zoom) {
+function getScreenPos(absolutePos, zoom, rocketPos) {
 	return new Vector(
-		absolutePos.x*zoom - rocket.pos.x*zoom + canvas.width/2, 
-		absolutePos.y*zoom - rocket.pos.y*zoom + canvas.height/2);
+		absolutePos.x*zoom - rocketPos.x*zoom + canvas.width/2, 
+		absolutePos.y*zoom - rocketPos.y*zoom + canvas.height/2);
 }

@@ -29,16 +29,8 @@ var public = __dirname + '/public/';
 app.use(express.static(path.join(__dirname, 'public')));
 app.use((req, res) => res.sendFile(`${__dirname}/public/index.html`))
 
-// ADD SERVER FILES
-
-// Util
-var Vector = require('./modules/Vector.js');
-
-// Game
-
-
 // Server input commands
-const rl = readline.createInterface({
+/*const rl = readline.createInterface({
   input: process.stdin,
   output: process.stdout
 });
@@ -48,32 +40,42 @@ rl.on('line', (input) => {
   	if (input === 'refresh') {
   		io.emit('refresh');
   	}
-});
+});*/
+
+// ADD SERVER FILES - CREATE A ROOM MANAGER
+var Room = require('./modules/server/Room.js');
+
+var rooms = {};
 
 // Handle player connection
 io.on('connection', function(socket) {
 	let roomId = undefined;
 
-	// Create a room
-	socket.on("joinRoom", function (id) {
+	// Join a room
+	socket.on("joinRoom", (id) => {
 		if (!roomId) {
-			console.log("Created room with id: " + id)
+	    	roomId = id;
+
 			socket.join(id, () => {
-				let rooms = Object.keys(socket.rooms);
-	    		roomId = id;
-				io.to(id).emit("msg", "Joined room: " + id);
+				if (!rooms[id]) {
+					rooms[id] = new Room(id, io);
+				}
+				rooms[id].join(socket.id);
 			});
 		}
 	})
 
-	// Join a room
-	socket.on("joinRoom", function () {
-
+	// Receive updates from the player
+	socket.on('update', (data) => {
+		if (roomId)
+			rooms[roomId].receivePlayerData(data);
 	})
 
 	// Disconnect
 	socket.on("disconnect", () => {
 		socket.leave(roomId, () => {
+			if (rooms[roomId])
+				rooms[roomId].leave(socket.id); // let the server manager manage this
 			console.log("Left room with id: ", roomId)
 		})
 	})
@@ -83,6 +85,10 @@ io.on('connection', function(socket) {
 // Server loop
 setInterval(function() {
 
+	for (let id in rooms) {
+		let room = rooms[id];
+		room.update(io);
+	}
 
 }, 20);
 
