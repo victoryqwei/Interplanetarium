@@ -74,8 +74,9 @@ io.on('connection', function(socket) {
 	// Disconnect
 	socket.on("disconnect", () => {
 		socket.leave(roomId, () => {
-			if (rooms[roomId])
+			if (rooms[roomId]) {
 				rooms[roomId].leave(socket.id); // let the server manager manage this
+			}
 			console.log("Left room with id: ", roomId)
 		})
 	})

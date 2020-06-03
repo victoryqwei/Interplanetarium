@@ -41,7 +41,7 @@ module.exports = class Map {
 		let randRadius;
 		let minSpawnDistance = 0; // How much the planets must be separated by
 
-		if (seed < 100/100) {
+		if (seed < 95/100) {
 			seed = "planet";
 			randRadius = Util.randInt(100, 300);
 			minSpawnDistance = 200;
@@ -84,7 +84,7 @@ module.exports = class Map {
 	    	return new Planet(randPos.x, randPos.y, randRadius * this.massMultiplier, randRadius, "Planet", planetNames[Util.randInt(0, planetNames.length-1)], Util.getRandomColor())
 		} else if (seed == "blackhole") {
 			// Create black hole
-	   		return new Planet(randPos.x, randPos.y, 5000000, 75, "Black Hole", "Black Hole", "#ffffff", "black");
+	   		return new Planet(randPos.x, randPos.y, 5000000, 75, "Black Hole", "Black Hole", "#000000", "black");
 		} else if (seed = "kanus minimus") {
 			// Create planets
 	    	return new Planet(randPos.x, randPos.y, 1000, randRadius, "Planet", "Kanus Minimus", "#ffffff");

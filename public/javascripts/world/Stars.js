@@ -6,6 +6,7 @@ Creates the background star effect including the warp effect while using the war
 
 import {input} from "../game/input.js";
 import {game} from "../game/Game.js";
+import {QuadTree, Rectangle, Circle, Point} from "../util/QuadTree.js"
 
 class Star {
 	constructor() {
@@ -19,7 +20,7 @@ class Star {
 	}
 
 	// Animate the stars
-	animate(rocket) {
+	animate(rocket, qTree) {
 		let keys = input.keys;
 
 		let starDistance = 10;
@@ -28,7 +29,7 @@ class Star {
 		if (display.warp) {
 			this.z -= delta*3; // Move the stars closer towards the screen
 		} else if (display.state == "menu") {
-			this.z -= delta/40;
+			this.z -= delta/30;
 		}
 
 		// Checks if the star is within screen bounds and corrects its position
@@ -71,6 +72,11 @@ class Star {
 
 			// Draws the star
 			this.drawStar(px, py, sx, sy, t);
+
+			// Add to the quadtree
+			qTree.insert(new Point(sx + canvas.width/2, sy + canvas.height/2, 1, {
+				t: t
+			}))
 		}
 
 		// Stores the previous positions of the star
@@ -90,15 +96,15 @@ class Star {
 	}
 
 	drawStar(px, py, sx, sy, t) {
+		// Draw star
 		drawLine(px, py, sx, sy, "white", t, "round", game.sound.beatOpacity);
 	}
-
-
 }
 
 export default class Stars {
 	constructor(numberOfStars) {
 		this.stars = [];
+		this.starQ = undefined;
 
 		for (let i = 0; i < numberOfStars; i++) {
 			this.stars.push(new Star());
@@ -116,12 +122,52 @@ export default class Stars {
 			}
 		}
 
+		this.starQ = new QuadTree(new Rectangle(canvas.width/2, canvas.height/2, canvas.width, canvas.height), 5);
+
 		// Animate stars
+
 		ctx.save();
 		ctx.translate(canvas.width/2, canvas.height/2)
 		for (let star of this.stars) {
-			star.animate(rocket, warp);
+			star.animate(rocket, this.starQ);
 		}
 		ctx.restore();
+
+		// Animate star warp effect
+		this.animateStarWarp();
+	}
+
+	animateStarWarp() {
+		if (!game.map || display.state != "play" || display.warp)
+			return;
+
+		let zoom = display.warp ? display.mapZ : display.zoom;
+		let arcDistance = 300;
+
+		for (let p of game.screen.planets) {
+			if (p.type == "Black Hole") {
+				// Screen position of planet
+				let planetScreen = getScreenPos(p.pos, zoom, game.rocket.pos);
+
+				let range = new Circle(planetScreen.x, planetScreen.y, arcDistance*zoom);
+				let points = this.starQ.query(range);
+
+				for (let point of points) {
+					let starRadian = Math.atan2(point.y - planetScreen.y, point.x - planetScreen.x);
+					let distance = getDistance(planetScreen.x, planetScreen.y, point.x, point.y);
+					let starArc = Math.PI - Math.PI*(distance/(arcDistance*zoom));
+
+					ctx.beginPath();
+					ctx.strokeStyle = "white";
+					ctx.lineCap = "round";
+					ctx.globalAlpha = 1-distance/arcDistance;
+					ctx.lineWidth = point.data.t;
+					ctx.arc(planetScreen.x, planetScreen.y, distance, starRadian - starArc, starRadian + starArc);
+					ctx.stroke();
+					ctx.lineCap = "butt";
+					ctx.closePath();
+				}
+			}
+		}
 	}
 }

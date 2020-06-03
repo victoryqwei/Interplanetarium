@@ -96,14 +96,15 @@ export default class Rocket {
 	}
 
 	update() {
-		if (display.state == "play") {
-			this.getInput();
-			this.move();
-			this.updateVitals();
-			this.collision();
+		if (display.state != "play" || display.warp)
+			return;
 
-			Rocket.addParticles(this);
-		}
+		this.getInput();
+		this.move();
+		this.updateVitals();
+		this.collision();
+
+		Rocket.addParticles(this);
 	}
 
 	getInput() {
@@ -195,8 +196,8 @@ export default class Rocket {
 
 		// Gravitational force
 		let gravForce = new Vector();
-		for (let id in game.map.planets) {
-			let p = game.map.planets[id];
+		for (let id in game.screen.planets) {
+			let p = game.screen.planets[id];
 			gravForce.add(this.attract(p));
 		}
 		this.gForce = gravForce.getMag()/433;
@@ -229,15 +230,15 @@ export default class Rocket {
 		}
 
 		// Update closest planet distance
-		this.closestPlanetDistance = Math.max(0, this.getClosestPlanet(game.map.planets));
+		this.closestPlanetDistance = Math.max(0, this.getClosestPlanet(game.screen.planets));
 	}
 
 	collision() {
 		if (!game.map)
 			return;
 
-		let planets = game.map.planets;
-		if (!planets)
+		let planets = game.screen.planets;
+		if (!planets) // No planets in vicity, return
 			return;
 
 		this.onPlanet = false;

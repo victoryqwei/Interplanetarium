@@ -15,45 +15,31 @@ export default class Planet {
 		let zoom = display.warp ? display.mapZ : display.zoom;
 		let rocket = game.rocket;
 
-		//this.escapeThrust = round((this.mass*rocket.mass)/Math.pow(this.radius+rocket.height/2, 2));
+		ctx.save();
 
-		if (inScreen(pos, false, radius + 500, rocket.pos) || display.warp) {
-			ctx.save();
-
-			let options = {
-				outline: true,
-				outlineWidth: 10*display.zoom,
-				outlineColor: pSBC(-0.2, config.color, false, true), 
-				glow: true,
-				glowColor: config.color,
-				glowWidth: 100*display.zoom
-			}
-
-			if (display.performanceMode || display.warp) {
-				options.glow = false;
-				options.outline = false;
-			}
-
-			var screenPos = getScreenPos(pos, zoom, rocket.pos);
-
-			// Draw Planet
-			if(type == "Planet") {
-				drawCircle(screenPos.x, screenPos.y, radius*zoom, config.color, options);
-			} else if(type == "Black Hole") {
-				drawCircle(screenPos.x, screenPos.y, radius*zoom, config.color, options);
-
-				let horizonDistance = getDistance(screenPos.x - rocket.pos.x*zoom + canvas.width/2,
-				screenPos.y - rocket.pos.y*zoom + canvas.height/2, canvas.width/2, canvas.height/2);
-
-				//Event horizon
-				if (horizonDistance >= radius*1.5*zoom) {
-					drawCircle(screenPos.x, screenPos.y, radius*1.5*zoom, config.color, options);
-				} else {
-					drawCircle(screenPos.x, screenPos.y, (canvas.width*4 - canvas.width*4*(horizonDistance/(200*zoom))), config.color, options);
-				}
-			}
-			ctx.restore();
+		let options = {
+			outline: true,
+			outlineWidth: 10*display.zoom,
+			outlineColor: pSBC(-0.2, config.color, false, true), 
+			glow: true,
+			glowColor: config.color,
+			glowWidth: 100*display.zoom
 		}
+
+		if (display.performanceMode || display.warp) {
+			options.glow = false;
+			options.outline = false;
+		}
+
+		var screenPos = getScreenPos(pos, zoom, rocket.pos);
+
+		// Draw Planet
+		if(type == "Planet") {
+			drawCircle(screenPos.x, screenPos.y, radius*zoom, config.color, options);
+		} else if(type == "Black Hole") {
+			drawCircle(screenPos.x, screenPos.y, radius*zoom, config.color, options);
+		}
+		ctx.restore();
 	}
 
 	displayTurret() {

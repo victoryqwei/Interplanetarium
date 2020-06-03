@@ -4,6 +4,7 @@ In game interface
 
 */
 import Rocket from "../player/Rocket.js";
+import Minimap from "./Minimap.js";
 import {game} from "../game/Game.js";
 
 export default class UI {
@@ -13,10 +14,13 @@ export default class UI {
 		this.interfaceWidth = 250;
 		this.padding = 20;
 
+		this.minimap = new Minimap();
+
 	}
 
 	draw() {
 		this.drawMain();
+		this.minimap.draw();
 	}
 
 	drawMain() {
@@ -28,11 +32,17 @@ export default class UI {
 		drawText("Fuel: " + Math.round(game.rocket.fuel), 10, 70, "20px Arial", "white", "left", "middle", Math.min(game.sound.beatOpacity + 0.6, 1));
 
 		// Draw shape outlines
-		/*ctx.globalAlpha = 0.4;asdasdasdasd
+		if (display.state != "play")
+			return;
+
+		/*
+		ctx.globalAlpha = 1;
 		drawTrapezoid(canvas.width/2 - this.interfaceWidth / 2, canvas.height - this.padding, this.interfaceWidth, -this.interfaceHeight, this.interfaceWidth / 3.9);
 		drawTriangle(canvas.width/2 - this.interfaceWidth / 1.8, canvas.height - this.interfaceHeight / 2 - this.padding + 2, this.interfaceWidth / 2 - 5, this.interfaceHeight - 5, 0, "white");
 		drawTriangle(canvas.width/2 + this.interfaceWidth / 1.8, canvas.height - this.interfaceHeight / 2 - this.padding + 2, this.interfaceWidth / 2 - 5, this.interfaceHeight - 5, 0, "white");
 
-		drawText("100%", canvas.width/2, canvas.height - this.padding * 2.5, "40px Arial", "white", "center", "middle", "0.4")*/
+		drawText("100%", canvas.width/2, canvas.height - this.padding * 2.5, "40px Arial", "white", "center", "middle", 1)*/
 	}
+
+
 }

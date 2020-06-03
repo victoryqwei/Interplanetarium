@@ -1,0 +1,9 @@
+#minimap-container {
+	width: 30vh; 
+	height: 30vh; 
+	border-radius: 10px;
+	bottom: 40px;
+	left: 40px;
+	position: absolute;
+	z-index: 1;
+}

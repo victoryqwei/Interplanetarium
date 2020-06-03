@@ -1,3 +1,4 @@
+
 /*
 
 Stores all the variables for the game
@@ -6,6 +7,7 @@ Stores all the variables for the game
 
 import Rocket from "../player/Rocket.js";
 import Sound from "./Sound.js";
+import {QuadTree, Rectangle, Point} from "../util/QuadTree.js"
 
 class Game {
 	constructor() {
@@ -19,7 +21,9 @@ class Game {
 		this.rocket = new Rocket();
 
 		// World data
-		this.map = undefined;
+		this.map = undefined; // The entire map
+		this.mapQ = undefined; // The map in a quadtree (easy collision detection)
+		this.screen = undefined; // Everything in the screen;
 
 		// Server data
 		this.players = {};
@@ -29,8 +33,7 @@ class Game {
 	}
 
 	update() {
-		if (display.warp)
-			return;
+		this.updateScreen();
 
 		this.rocket.update();
 		this.sound.music();
@@ -52,6 +55,30 @@ class Game {
 		}, 20)
 
 		display.state = "play";
+	}
+
+	updateScreen() {
+		if (!this.mapQ)
+			return;
+
+		// Update the objects that are in the screen
+
+		this.screen = {
+			planets: [],
+			players: []
+		}
+
+		let zoom = display.zoom;
+		let rocket = this.rocket;
+
+		let range = new Rectangle(rocket.pos.x, rocket.pos.y, canvas.width/zoom, canvas.height/zoom);
+		if (display.warp)
+			range = new Rectangle(0, 0, this.map.mapRadius, this.map.mapRadius);
+		let points = this.mapQ.query(range);
+
+		for (let p of points) {
+			this.screen.planets.push(p.data);
+		}
 	}
 
 	receivePlayerData(data) {
@@ -86,7 +113,17 @@ class Game {
 
 	receiveMapData(data) {
 		this.map = data;
-		console.log(data);
+
+		// Create map quadtree
+		this.mapQ = new QuadTree(new Rectangle(0, 0, this.map.mapRadius, this.map.mapRadius), 4)
+
+		for (let id in this.map.planets) {
+			let p = this.map.planets[id];
+			var point = new Point(p.pos.x, p.pos.y, p.radius, p);
+			this.mapQ.insert(point)
+		}
+
+		console.log(this.mapQ)
 	}
 }
 

@@ -9,6 +9,7 @@ import Planet from "../world/Planet.js";
 import Rocket from "../player/Rocket.js";
 import {input} from "./input.js";
 import {game} from "./Game.js";
+import {Rectangle} from "../util/QuadTree.js";
 
 export default class Animate {
 	constructor() {
@@ -19,7 +20,7 @@ export default class Animate {
 		this.animateBackground();
 		this.animateStars();
 		this.animatePlanets();
-		if(display.state == "play" && !display.warp) {
+		if (display.state == "play" && !display.warp) {
 			this.animateRocket();
 			this.animatePlayers();
 		}
@@ -48,9 +49,8 @@ export default class Animate {
 	animatePlanets() {
 		if (!game.map)
 			return;
-		
-		for (let id in game.map.planets) {
-			let planet = game.map.planets[id];
+
+		for (let planet of game.screen.planets) {
 			Planet.display(planet.pos, planet.radius, planet.type, {
 				color: planet.color,
 				strokeColor: planet.strokeColor
