@@ -22,6 +22,9 @@ module.exports = class Vector {
 		this.y = this.y + a.y
 	  }
 	}
+	static add(a, b) {
+		return new Vector(a.x + b.x, a.y + b.y);
+	}
 	sub(a, b) {
 	  if (b) {
 	    return new Vector(a.x - b.x, a.y - b.y);
@@ -33,6 +36,9 @@ module.exports = class Vector {
 	mult(scalar) {
 		this.x = this.x * scalar;
 		this.y = this.y * scalar;
+	}
+	static mult(vector, scalar) {
+		return new Vector(vector.x * scalar, vector.y * scalar);
 	}
 	div(scalar) {
 		this.x = this.x / scalar;

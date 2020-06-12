@@ -10,9 +10,16 @@ module.exports = class Resource {
 		} else {
 			this.type = type;
 		}
-		this.amount = amount || Function.randInt(100, 1000);
+
+		this.totalAmount = amount || Function.randInt(100, 1000);
 		if (type == "None")
-			this.amount = 100;
-		this.totalAmount = totalAmount || this.amount;
+			this.totalAmount = 100;
+
+
+		this.amount = Math.random() * this.totalAmount;
+
+		
+		
+		
 	}
 }

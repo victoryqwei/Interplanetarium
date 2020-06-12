@@ -113,6 +113,16 @@ export default class Stars {
 
 	animate(rocket, warp) {
 		// Warp effect
+		this.animateWarp();
+
+		// Animate stars
+		this.animateStars(rocket);
+
+		// Animate star warp effect
+		this.animateStarWarp();
+	}
+
+	animateWarp() {
 		if (display.warp) {
 			if (display.mapZ >= display.minZoom) {
 				display.mapZ = display.minZoom;
@@ -121,10 +131,10 @@ export default class Stars {
 				display.mapZ += delta/200 * display.mapZ;
 			}
 		}
+	}
 
+	animateStars(rocket) {
 		this.starQ = new QuadTree(new Rectangle(canvas.width/2, canvas.height/2, canvas.width, canvas.height), 5);
-
-		// Animate stars
 
 		ctx.save();
 		ctx.translate(canvas.width/2, canvas.height/2)
@@ -132,9 +142,6 @@ export default class Stars {
 			star.animate(rocket, this.starQ);
 		}
 		ctx.restore();
-
-		// Animate star warp effect
-		this.animateStarWarp();
 	}
 
 	animateStarWarp() {
@@ -142,9 +149,10 @@ export default class Stars {
 			return;
 
 		let zoom = display.warp ? display.mapZ : display.zoom;
-		let arcDistance = 300;
+		let arcDistance = 150;
 
-		for (let p of game.screen.planets) {
+		for (let id in game.screen.planets) {
+			let p = game.screen.planets[id];
 			if (p.type == "Black Hole") {
 				// Screen position of planet
 				let planetScreen = getScreenPos(p.pos, zoom, game.rocket.pos);
@@ -160,7 +168,7 @@ export default class Stars {
 					ctx.beginPath();
 					ctx.strokeStyle = "white";
 					ctx.lineCap = "round";
-					ctx.globalAlpha = 1-distance/arcDistance;
+					ctx.globalAlpha = 1;
 					ctx.lineWidth = point.data.t;
 					ctx.arc(planetScreen.x, planetScreen.y, distance, starRadian - starArc, starRadian + starArc);
 					ctx.stroke();

@@ -64,11 +64,22 @@ io.on('connection', function(socket) {
 			});
 		}
 	})
-
+	
 	// Receive updates from the player
 	socket.on('update', (data) => {
 		if (roomId)
 			rooms[roomId].receivePlayerData(data);
+	})
+
+	// Latency check
+	socket.on('pingServer', function (data) {
+		socket.emit('pongServer', data);
+	})
+
+	// New level
+	socket.on('newLevel', (data) => {
+		if (roomId)
+			rooms[roomId].createNewLevel(data);
 	})
 
 	// Disconnect
@@ -83,6 +94,9 @@ io.on('connection', function(socket) {
 
 });
 
+let tps = 30;
+let tick = Math.round(1000/tps);
+
 // Server loop
 setInterval(function() {
 
@@ -91,6 +105,6 @@ setInterval(function() {
 		room.update(io);
 	}
 
-}, 20);
+}, tick);
 
 module.exports = app;

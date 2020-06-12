@@ -133,7 +133,15 @@ export class QuadTree {
 		}
 
 		if (this.points.length < this.capacity) {
-			this.points.push(point);
+			let exists = false;
+			for (let p of this.points) {
+				if (p.data.id && p.data.id == point.data.id) {
+					exists = true;
+					p.data = point.data;
+				}
+			}
+			if (!exists)
+				this.points.push(point);
 			return true;
 		} else {
 			if (!this.divided) {

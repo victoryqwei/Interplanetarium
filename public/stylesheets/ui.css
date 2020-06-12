@@ -7,3 +7,13 @@
 	position: absolute;
 	z-index: 1;
 }
+
+#interface-container {
+	width: 80vh; 
+	height: 10vh; 
+	border-radius: 10px;
+	bottom: 40px;
+	left: 50px;
+	position: absolute;
+	z-index: 1;
+}

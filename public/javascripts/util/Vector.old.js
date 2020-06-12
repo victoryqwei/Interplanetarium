@@ -22,6 +22,9 @@ class Vector {
 		this.y = this.y + a.y
 	  }
 	}
+	static add(a, b) {
+		return new Vector(a.x + b.x, a.y + b.y);
+	}
 	sub(a, b) {
 	  if (b) {
 	    return new Vector(a.x - b.x, a.y - b.y);
@@ -65,6 +68,9 @@ class Vector {
 	}
 	copy() {
 		return new Vector(this.x, this.y);
+	}
+	static copy(vector) {
+		return new Vector(vector.x, vector.y);
 	}
 	rotate(ang)
 	{

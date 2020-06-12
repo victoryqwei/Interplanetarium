@@ -22,6 +22,9 @@ export default class Vector {
 		this.y = this.y + a.y
 	  }
 	}
+	static add(a, b) {
+		return new Vector(a.x + b.x, a.y + b.y);
+	}
 	sub(a, b) {
 	  if (b) {
 	    return new Vector(a.x - b.x, a.y - b.y);
@@ -44,6 +47,9 @@ export default class Vector {
 		this.x = this.x / scalar;
 		this.y = this.y / scalar;
 	}
+	static div(vector, scalar) {
+		return new Vector(vector.x / scalar, vector.y / scalar);
+	}
 	getDot(b) {
 		return this.x * b.x + this.y * b.y;
 	}
@@ -63,6 +69,9 @@ export default class Vector {
 	}
 	copy() {
 		return new Vector(this.x, this.y);
+	}
+	static copy(vector) {
+		return new Vector(vector.x, vector.y);
 	}
 	rotate(ang)
 	{

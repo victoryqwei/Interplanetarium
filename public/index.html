@@ -24,7 +24,6 @@ Created by Victor Wei and Evan Cowan
 				z-index: 0;
 			}
 		</style>
-
 	</head>
 	
 	<div id="title">
@@ -41,7 +40,9 @@ Created by Victor Wei and Evan Cowan
 			<canvas id="minimap-canvas"></canvas>
 		</div>
 
-		<canvas id="interface-canvas"></canvas>
+		<div id="interface-container">
+			<canvas id="interface-canvas"></canvas>
+		</div>
 
 		<!-- Util -->
 		<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
@@ -52,12 +53,12 @@ Created by Victor Wei and Evan Cowan
 		<script src="javascripts/util/cookie.js"></script>
 
 		<!-- UI Files -->
-		<script type="module" src="javascripts/ui/menu.js"></script>
+		<script type="module" crossorigin="anonymous" src="javascripts/ui/menu.js"></script>
 		
 		<!-- Game Files -->
-		<script type="module" src="javascripts/game/input.js"></script>
-		<script type="module" src="javascripts/game/event.js"></script>
+		<script type="module" crossorigin="anonymous" src="javascripts/game/input.js"></script>
+		<script type="module" crossorigin="anonymous" src="javascripts/game/event.js"></script>
 
-		<script type="module" src="javascripts/game/main.js"></script>\
+		<script type="module" crossorigin="anonymous" src="javascripts/game/main.js"></script>\
 	</body>
 </html>

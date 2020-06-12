@@ -8,6 +8,7 @@ import Vector from "../util/Vector.js";
 import {input} from "../game/input.js";
 import {images} from "../world/assets.js";
 import {game} from "../game/Game.js";
+import {vfx} from "../visuals/VFXManager.js";
 
 export default class Rocket {
 	constructor(x, y, mass, width, height) {
@@ -28,7 +29,7 @@ export default class Rocket {
 		// Forces
 		this.thrust = 0;
 		this.steer = 0;
-		this.gForce = 0; // Gravitational pull
+		this.gForce = 0;
 
 		// Fuel
 		this.fuel = 0;
@@ -37,11 +38,16 @@ export default class Rocket {
 		this.integrity = 100;
 		this.maxIntegrity = this.integrity;
 
-		// Extra data
+		this.crashed = false;
+
+		// Missiles
+		this.shootDelay = 200;
+		this.shootTime = Date.now();
+		this.newMissiles = [];
+
+		// World data
 		this.closestPlanetDistance = 0;
 		this.closestPlanet = undefined;
-
-		this.crashed = false;
 
 		// Set config
 		let config = {
@@ -61,6 +67,8 @@ export default class Rocket {
 			resistance: 20,
 			damage: 1
 		}
+
+		this.mortalCourse = false;
 	}
 
 	setConfig(cfg) {
@@ -148,6 +156,35 @@ export default class Rocket {
 		} else {
 			this.thrust = 0;
 		}
+
+		// Shooting
+		if (mouse.left && Date.now() - this.shootTime > this.shootDelay) {
+			// Reset shooting delay
+			this.shootTime = Date.now();
+
+			// Get player shooting direction
+			let bulletPos = this.pos.copy();
+			let playerHeading = mouse.copy();
+			playerHeading.sub(new Vector(canvas.width/2, canvas.height/2));
+
+			playerHeading.normalize();
+			let playerAngle = Math.atan2(playerHeading.y, playerHeading.x);
+
+			var missileData = {
+				pos: bulletPos,
+				vel: this.vel.copy(),
+				heading: playerHeading,
+				angle: playerAngle,
+				speed: 1,
+				color: "lime",
+				time: Date.now(),
+				id: socket.id,
+				type: "player"
+			}
+
+			game.missiles.push(missileData)
+			this.newMissiles.push(missileData)
+		}
 	}
 
 	attract(planet) {
@@ -225,7 +262,20 @@ export default class Rocket {
 		// Update fuel
 		let newFuel = this.fuel - (Math.abs(this.thrust) + Math.abs(this.steer)*200) * delta / 1000 * this.fuelConsumption;
 		this.fuel = constrain(newFuel, 0, this.maxFuel);
+
 		if (this.fuel <= 0) {
+			if(!this.crashed) {
+				game.sendLog("fuel");
+			}
+			this.crashed = true;
+			this.thrust = 0;
+		}
+
+		if (this.integrity <= 0) {
+			if(!this.crashed) {
+				game.sendLog("death");
+			}
+			this.crashed = true;
 			this.thrust = 0;
 		}
 
@@ -238,7 +288,7 @@ export default class Rocket {
 			return;
 
 		let planets = game.screen.planets;
-		if (!planets) // No planets in vicity, return
+		if (!planets) // No planets in vicinity, return
 			return;
 
 		this.onPlanet = false;
@@ -269,6 +319,10 @@ export default class Rocket {
 
 			if (this.speed > this.landingSpeed || !this.goodLanding) {
 				// High velocity or wrong landing
+				if (!this.crashed) {
+					game.sendLog("crash");
+					vfx.add(this.pos, "explosion", {size: 100, alpha: 1, duration: 200})
+				}
 				this.crashed = true;
 			} else {
 				// Perfect landing or Good landing
@@ -278,6 +332,26 @@ export default class Rocket {
 				this.onPlanet = true;
 			}
 		}
+
+		// Collision warning detection
+        if (game.radar && this.vel) {
+        	this.mortalCourse = false;
+
+        	// Extrapolate the position of the rocket
+        	let averageDelta = 1000/averageFps;
+        	let heading = new Vector(this.vel.x/averageDelta*20, this.vel.y/averageDelta*20);
+        	let headingPos = Vector.add(heading, this.pos);
+
+        	for (let id in game.radar.planets) {
+	        	let planet = game.radar.planets[id];
+	        	let collision = inRadialView(Vector.copy(planet.pos), Vector.add(heading, this.pos), this.pos.copy(), planet.radius);
+
+	        	if (collision && this.vel.getMag() > this.landingSpeed - 100) {
+	        		this.mortalCourse = getDistance(planet.pos, this.pos) - planet.radius;
+	        	}
+	        }
+	        drawLine(0, 0, heading.x, heading.y, this.mortalCourse ? "red" : "lime", 5)
+        }  	
 	}
 
 	respawn() {
@@ -326,13 +400,15 @@ export default class Rocket {
 		}
 		// Draw the player
 		let rocket = game.rocket;
-		let width = (player.width || rocket.width) * display.zoom;
-		let height = (player.height || rocket.height) * display.zoom;
+		let zoom = display.warp ? display.mapZ : display.zoom;
+
+		let width = (player.width || rocket.width) * zoom;
+		let height = (player.height || rocket.height) * zoom;
 		let pos = new Vector(canvas.width/2, canvas.height/2);
 
 		if (serverRocket) {
 			Rocket.addParticles(player);
-			pos = getScreenPos(player.pos, display.zoom, rocket.pos);
+			pos = getScreenPos(player.pos, zoom, rocket.pos);
 		}
 
 		// Draw particle
@@ -350,7 +426,7 @@ export default class Rocket {
         ctx.translate(pos.x, pos.y);
         ctx.rotate(player.angle);
 
-        //Set
+        // Set your mom
         let halfWidth = width/2;
         let halfHeight = height/2;
 
@@ -359,21 +435,21 @@ export default class Rocket {
         	let thrustLength = scale(player.thrust/rocket.maxThrust, 0, 1, 0.2, 1.5);
 	       	drawTriangle(halfWidth, width*2 + (width*thrustLength / 2), width/3, width*thrustLength, Math.PI, "orange");
 	        drawTriangle(-halfWidth, width*2 + (width*thrustLength / 2), width/3, width*thrustLength, Math.PI, "orange");
-        }	
+        }
         // Draw thrusters
         drawRect(-halfWidth, halfHeight, halfWidth, width, 0, player.color || "red");
         drawRect(halfWidth, halfHeight, halfWidth, width, 0, player.color || "red");
         // Draw nose cone
         drawTriangle(0, -halfHeight - halfWidth, width, width, 0, player.color || "red");
         // Draw player window
-        drawRoundedRect(0-width/4, -width, halfWidth, width, 3*display.zoom, "rgb(70, 70, 70)")
+        drawRoundedRect(0-width/4, -width, halfWidth, width, 3*zoom, "rgb(70, 70, 70)")
         // Draw thruster caps
         drawTriangle(halfWidth, width/1.33, halfWidth, halfWidth, 0, player.color || "red");
         drawTriangle(-halfWidth, width/1.33, halfWidth, halfWidth, 0, player.color || "red");
         // Draw body accent
         drawTriangle(0, height/4, width/1.5, -width/1.5, 0, pSBC(-0.05, pSBC(Math.max(-(1-(player.integrity/100)), -1), "#d3d3d3", false, true), false, true));
-        ctx.restore();
 
+        ctx.restore();
 	}
 
 	static addParticles(player) {
@@ -418,7 +494,7 @@ export default class Rocket {
 	}
 
 	static animateParticles(player, serverRocket) {
-		let zoom = display.zoom;
+		let zoom = display.warp ? display.mapZ : display.zoom;
 		let rocket = game.rocket;
 		let smoke = images.smoke;
 		let smokeDuration = 500;
@@ -427,11 +503,6 @@ export default class Rocket {
 			return;
 
 		let pos = new Vector(canvas.width/2, canvas.height/2);
-
-		if (serverRocket) {
-			//pos = getScreenPos(player.pos, zoom, rocket.pos);
-			//pos.sub(new Vector(rocket.pos.x*zoom, rocket.pos.y*zoom));
-		}
 
 		for (let i = 0; i < player.particles.length; i++) {
 			let p = player.particles[i];

@@ -3,6 +3,28 @@ export default class Util {
 		this.ctx = ctx;
 	}
 
+	drawCompass(x, y, base, height, angle, c) {
+		let {ctx} = this;
+
+      	ctx.save();
+	 	ctx.translate(x, y);
+		ctx.rotate(angle);
+        ctx.beginPath();
+        var path = new Path2D();
+	    path.moveTo(-base/2,height/2);
+	    path.lineTo(0,-height/2);
+	    path.lineTo(base/2,height/2);
+	    
+	    path.lineTo(0,height/4);
+	    path.lineTo(-base/2,height/2);
+	    path.lineTo(0,-height/2);
+	    ctx.fillStyle = c || "red";
+	    ctx.fill(path);
+
+	    ctx.closePath();
+        ctx.restore();
+    }
+
 	drawTrapezoid(x, y, w, h, i) {
 		let {ctx} = this;
 
@@ -304,6 +326,36 @@ export default class Util {
 	    ctx.fillStyle = color || "black";
 	    ctx.strokeStyle = color || "black";
 	    ctx.fill(path);
+
+	   	ctx.closePath();
+		ctx.resetTransform();
+		ctx.restore();
+	}
+
+	drawWarning(x, y, base, height, angle, color, alpha) {
+		let {ctx} = this;
+	 	
+	 	ctx.save();
+	 	ctx.translate(x, y)
+		ctx.rotate(angle);
+		ctx.beginPath();
+		ctx.globalAlpha = alpha || 1;
+	    var path =new Path2D();
+	    path.moveTo(-base/2,height/2);
+	    path.lineTo(0,-height/2);
+	    path.lineTo(base/2,height/2);
+	    path.lineTo(-base/2,height/2);
+	    path.lineTo(0,-height/2);
+	    ctx.miterLimit = 10;
+	    ctx.lineJoin = "miter";
+	    ctx.lineWidth = 15;
+	    ctx.fillStyle = color || "black";
+	    ctx.strokeStyle = color || "black";
+	    ctx.lineJoin = "round";
+	    ctx.fill(path);
+	    ctx.stroke(path);
+
+	    this.drawText("!", 0, height/6, "bold " + height/1.7 + "px Arial", "white", "center", "middle", 1);
 
 	   	ctx.closePath();
 		ctx.resetTransform();

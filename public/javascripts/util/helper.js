@@ -272,6 +272,8 @@ function drawArrow(x1, y1, x2, y2, thickness, color, alpha, cap){
     ctx.strokeStyle = color || "black";
     ctx.fill(path);
 
+    ctx.globalAlpha = 1;
+
    	ctx.closePath();
 	ctx.resetTransform();
 	ctx.restore();
@@ -482,7 +484,7 @@ function circleCollidesRect ( circle, rect ) {
 	// Determine collision
 	var collision = false;
 	var distance = getDistance( unrotatedCircleX, unrotatedCircleY, closestX, closestY );
-	
+	 
 	if ( distance < circle.radius ) {
 		collision = true;
 	}
@@ -493,11 +495,20 @@ function circleCollidesRect ( circle, rect ) {
 	return collision;
 }
 
-function getDistance( fromX, fromY, toX, toY ) {
-	var dX = Math.abs( fromX - toX );
-	var dY = Math.abs( fromY - toY );
 
-	return Math.sqrt( ( dX * dX ) + ( dY * dY ) );
+
+function getDistance( fromX, fromY, toX, toY ) {
+    let diffX, diffY;
+    if (fromX instanceof Vector || fromX.x) {
+        diffX = Math.abs( fromX.x - fromY.x );
+        diffY = Math.abs( fromX.y - fromY.y );
+    } else {
+        diffX = Math.abs( fromX - toX );
+        diffY = Math.abs( fromY - toY );
+    }
+	
+
+	return Math.sqrt( ( diffX * diffX ) + ( diffY * diffY ) );
 }
 
 function abbreviateNumber(value) {
@@ -519,6 +530,30 @@ function abbreviateNumber(value) {
 
 const scale = (num, in_min, in_max, out_min, out_max) => {
   return (num - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
+}
+
+function onArc(center, object, radius) {
+    return new Vector(center.x + (radius * ((object.x - center.x) / (Math.sqrt(Math.pow(object.x - center.x, 2) + (Math.pow(object.y - center.y, 2)))))), 
+                    center.y + (radius * ((object.y - center.y) / (Math.sqrt(Math.pow(object.x - center.x, 2) + (Math.pow(object.y - center.y, 2)))))))
+}
+
+function inRadialView(center, object, rocket, radius) {
+        object.x -= center.x;
+        object.y -= center.y;
+        rocket.x -= center.x;
+        rocket.y -= center.y;
+        let a = Math.pow((rocket.x - object.x), 2) + Math.pow((rocket.y - object.y), 2);
+        let b = 2*(object.x*(rocket.x - object.x) + object.y*(rocket.y - object.y));
+        let c = Math.pow(object.x, 2) + Math.pow(object.y, 2) - Math.pow(radius, 2);
+        let disc = Math.pow(b,2) - 4*a*c;
+        if(disc <= 0) 
+            return false;
+        let sqrtdisc = Math.sqrt(disc);
+        let t1 = (-b + sqrtdisc)/(2*a);
+        let t2 = (-b - sqrtdisc)/(2*a);
+        if((0 < t1 && t1 < 1) || (0 < t2 && t2 < 1)) 
+            return true;
+        return false;
 }
 
 function inScreen(pos, relative, r, rocketPos) {

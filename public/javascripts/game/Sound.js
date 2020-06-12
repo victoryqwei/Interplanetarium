@@ -29,10 +29,10 @@ export default class Sound {
 		let {wavesurfer, segments} = this;
 
 		// Load music
-		wavesurfer.load('./sounds/music.mp3');
+		wavesurfer.load('./sounds/music.wav');
 
 		// On music loaded
-		wavesurfer.on('ready', function () { 
+		wavesurfer.on('ready', function () {
 			//wavesurfer.play();
 			// Export beat segments
 			let musicExport = wavesurfer.exportPCM(2048, 10000, true, 0);

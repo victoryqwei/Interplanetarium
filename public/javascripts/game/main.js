@@ -5,7 +5,7 @@ This file should be kept very short as all the logic should be done in other fil
 
 */
 
-import Animate from './Animate.js'
+import Animate from '../visuals/Animate.js'
 import UI from '../ui/Interface.js'
 import {game} from "./Game.js";
 
