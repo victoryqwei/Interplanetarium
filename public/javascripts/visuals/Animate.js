@@ -21,11 +21,11 @@ export default class Animate {
 	animateAll() {
 		this.animateBackground();
 		this.animateStars();
-		this.animatePlanets();
 		if (display.state == "play") {
+			this.animateMissiles();
+			this.animatePlanets();
 			this.animateRocket();
 			this.animatePlayers();
-			this.animateMissiles();
 			this.animateVfx();
 		}
 	}
@@ -40,13 +40,13 @@ export default class Animate {
 	}
 
 	animateRocket() {
-		Rocket.display(game.rocket, false, true);
+		Rocket.display(game.rocket, false, true, game.rocket.name);
 	}
 
 	animatePlayers() {
 		for (let id in game.players) {
 			if (id != socket.id)
-				Rocket.display(game.players[id].rocket, true, true);
+				Rocket.display(game.players[id].rocket, true, true, game.players[id].name);
 		}
 	}
 
@@ -74,21 +74,42 @@ export default class Animate {
 		for (let i = game.missiles.length-1; i >= 0; i--) {
 			let m = game.missiles[i];
 
+			// Set missile color
+			let color = "red";
+			if (m.type == "seeking")
+				color = "Fuchsia";
+			if (m.origin == "player")
+				color = "lime";
+
 			// Extrapolate missile position
 			let t = Date.now()-m.time;
 			let pos = Vector.copy(m.pos);
-			let deltaPos = Vector.mult(m.heading, t)
-			deltaPos.mult(m.speed);
-			pos.add(deltaPos);
+
+			if (m.type == "laser") {
+				let deltaPos = Vector.mult(m.heading, t)
+				deltaPos.mult(m.speed);
+				pos.add(deltaPos);
+			}
+
+			// Seeking missile
+			if (m.type == "seeking" && getDistance(m.pos, rocket.pos) < 1000) {
+				let target = Vector.normalize(Vector.sub(rocket.pos, pos))
+				m.acc = target;
+				m.vel = Vector.add(m.vel, Vector.mult(m.acc, t));
+				m.vel = Vector.mult(Vector.normalize(m.vel), 1000 * m.speed);
+
+				m.angle = Math.atan2(target.y, target.x)
+			}
+
 			pos.add(Vector.mult(m.vel, t/1000));
 
 			// Draw the missile
 			let screenPos = getScreenPos(pos, display.zoom, game.rocket.pos);
-			drawRect(screenPos.x, screenPos.y, 24*zoom, 8*zoom, m.angle, m.color);
+			drawRect(screenPos.x, screenPos.y, 24*zoom, 8*zoom, m.angle, color);
 
 			// Check if projectile is too old
 			let old = t > 1000/m.speed;
-			let playerCollision = m.id != socket.id && getDistance(rocket.pos.x, rocket.pos.y, pos.x, pos.y) < 50;
+			let playerCollision = m.id != socket.id && getDistance(rocket.pos.x, rocket.pos.y, pos.x, pos.y) < 40;
 			let planetCollision = false;
 
 			for (let id in game.screen.planets) {
@@ -103,8 +124,11 @@ export default class Animate {
 			}
 
 			if (playerCollision || planetCollision) {
-				vfx.add(pos, "explosion", {size: 10, alpha: 1, duration: 300, color: m.color})
+				vfx.add(pos, "explosion", {size: 10, alpha: 1, duration: 100, color: color})
 			}
+
+			if (playerCollision)
+				vfx.add(pos, "damage", {size: 20, alpha: 1, duration: 1000, text: -1, color: color})
 
 			if (playerCollision)
 				game.rocket.integrity -= 1;

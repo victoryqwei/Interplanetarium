@@ -47,6 +47,9 @@ class Game {
 	start() { // Starts the game - This officially starts the game process
 		let rocket = this.rocket;
 
+		let tps = 30;
+		let tick = Math.round(1000/tps);
+
 		// Client -> Server loop
 		setInterval(function () {
 			socket.emit('update', {
@@ -56,7 +59,8 @@ class Game {
 					vel: rocket.vel,
 					angle: rocket.angle,
 					integrity: rocket.integrity,
-					thrust: rocket.thrust
+					thrust: rocket.thrust,
+					alive: rocket.alive
 				},
 				missiles: rocket.newMissiles,
 				effects: vfx.newEffects,
@@ -64,7 +68,7 @@ class Game {
 
 			rocket.newMissiles = [];
 			vfx.newEffects = [];
-		}, 20)
+		}, tick)
 
 		display.state = "play";
 	}
@@ -120,6 +124,9 @@ class Game {
 
 				player.rocket.integrity = players[id].rocket.integrity;
 				player.rocket.thrust = players[id].rocket.thrust;
+				player.rocket.alive = players[id].rocket.alive;
+
+				player.name = players[id].name;
 			}
 		}
 	}
@@ -158,8 +165,13 @@ class Game {
 
 		for (let id in this.map.planets) {
 			let p = this.map.planets[id];
+
+			for (let id in p.turrets) {
+				let t = p.turrets[id];
+			}
+
 			var point = new Point(p.pos.x, p.pos.y, p.radius, this.map.planets[id]);
-			this.mapQ.insert(point)
+			this.mapQ.insert(point);
 		}
 
 		// Warp to level location
@@ -169,6 +181,7 @@ class Game {
 	}
 
 	receiveLogData(data) {
+
 		for (let msg of data) {
 			this.log.push(msg);
 			setTimeout(function(){ 

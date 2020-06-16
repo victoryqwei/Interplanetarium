@@ -82,16 +82,17 @@ export default class Minimap {
 			}
 		}
 
+		// Draw navigation symbol
+		util.drawCompass(manvas.width/2, manvas.height/2, 12, 17, game.rocket.angle, "red");
+
 		// Draw the players on the minimap
 		for (let id in game.players) {
 			if (id == socket.id)
 				continue;
-			
 			let p = game.players[id].rocket;
+			if (!p.alive)
+				return;
 			util.drawCompass(manvas.width/2 + (p.pos.x - rocket.pos.x) / this.scale, manvas.height/2 + (p.pos.y - rocket.pos.y) / this.scale, 12, 17, p.angle, "white");
 		}
-
-		// Draw navigation symbol
-		util.drawCompass(manvas.width/2, manvas.height/2, 12, 17, game.rocket.angle, "red");
-	}
+	}	
 }

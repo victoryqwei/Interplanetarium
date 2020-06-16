@@ -47,17 +47,16 @@ export default class Planet {
 				var screenPos = getScreenPos(t.pos, zoom, rocket.pos);
 				
 				var turretBarrel = new Vector(t.barrelHeading.x, t.barrelHeading.y);
-				turretBarrel.mult(45*zoom);
+				turretBarrel.mult(20 + (10 * (Math.min(t.barrelShot, 20) / 20)) * zoom);
 
 				let screenBarrel = Vector.add(screenPos.copy(), turretBarrel.copy());
 				let color = "#4a4a4a";
 
-
 				// Draw turret
 				drawLine(screenPos.x, screenPos.y, screenPos.x+turretBarrel.x, screenPos.y+turretBarrel.y, color, 10*zoom, "butt")
-				drawRotatedRoundedRect(screenPos.x, screenPos.y, 35*zoom, 25*zoom, 4*zoom, pSBC(Math.max(-(1-(t.health/20)), -1), "grey", false, true), t.angle + Math.PI/2);
+				drawRotatedRoundedRect(screenPos.x, screenPos.y, 35*zoom, 25*zoom, 4*zoom, pSBC(Math.max(-(1-t.health/20),-1), "#a3a3a3", false, true), t.angle + Math.PI/2);
 
-				drawText((t.health * 5) + "%", screenPos.x, screenPos.y, 10*zoom + "px Arial", "white", "center", "middle", 0.8);
+				//drawText(t.barrelShot, screenPos.x, screenPos.y, 10*zoom + "px Arial", "white", "center", "middle", 0.8);
 
 			}
 		}

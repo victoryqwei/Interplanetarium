@@ -10,8 +10,7 @@ import {game} from "../game/Game.js";
 
 	let roomId = undefined;
 
-	// Join / create a room
-	$(window).click(function () {
+	function startGame() {
 		if (document.readyState != "complete")
 			return;
 		
@@ -19,13 +18,30 @@ import {game} from "../game/Game.js";
 		if (!roomId) {
 			let id = window.location.pathname.replace("/", "") || randomString(7);
 			console.log("Joining room with id", id);
-			socket.emit("joinRoom", id);
-			roomId = id;
+			let username = $("#username").val() || ("Player" + randInt(1000, 9999));
+			socket.emit("joinRoom", {
+				id: id,
+				name: username
+			});
 
+			game.rocket.name = username;
+
+			roomId = id;
 			display.warp = true;
 
 			// Start the game
 			game.start();
+		}
+	}
+
+	// Join / create a room
+	$(window).click(function () {
+		startGame();
+	})
+
+	$("#username").on('keyup', function(e) {
+		if (e.keyCode == 13) {
+			startGame();
 		}
 	})
 }())

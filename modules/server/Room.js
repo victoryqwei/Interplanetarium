@@ -53,11 +53,12 @@ module.exports = class Room {
 	}
 
 	// Player joins the room
-	join(id) {
+	join(id, name) {
 		this.players[id] = {
-			id: id
+			id: id,
+			name: name
 		}
-		console.log("Joined room", this.id, "with id:", id, Date())
+		console.log(this.players[id].name + " joined room", this.id, "with id:", id, Date())
 		this.io.to(this.id).emit("msg", "Joined room "+ this.id + " with id: " + id + " " + Date());
 
 		this.io.to(id).emit("levelData", this.map);

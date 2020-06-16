@@ -61,6 +61,13 @@ export default class Vector {
 			this.div(this.getMag());
 		}
 	}
+	static normalize(vector) {
+		let v = vector.copy();
+		if (v.getMag() != 0) {
+			v.div(v.getMag());
+		}
+		return v;
+	}
 	limit(max) {
 		if (this.getMag() > max) {
 			this.normalize();

@@ -22,7 +22,7 @@ export default class Util {
 	    ctx.fill(path);
 
 	    ctx.closePath();
-        ctx.restore();
+        ctx.restore()
     }
 
 	drawTrapezoid(x, y, w, h, i) {
@@ -67,6 +67,44 @@ export default class Util {
 	    ctx.closePath();
 	    ctx.restore();
 	}
+
+	drawEllipse(x, y, w, h, c, options) {
+		let {ctx} = this;
+
+		if (!options)
+			options = {};
+
+		ctx.save();
+	    var kappa = .5522848,
+	    ox = (w / 2) * kappa, // control point offset horizontal
+	    oy = (h / 2) * kappa, // control point offset vertical
+	    xe = x + w,           // x-end
+	    ye = y + h,           // y-end
+	    xm = x + w / 2,       // x-middle
+	    ym = y + h / 2;       // y-middle
+
+	    ctx.beginPath();
+	    ctx.moveTo(x, ym);
+	    ctx.bezierCurveTo(x, ym - oy, xm - ox, y, xm, y);
+	    ctx.bezierCurveTo(xm + ox, y, xe, ym - oy, xe, ym);
+	    ctx.bezierCurveTo(xe, ym + oy, xm + ox, ye, xm, ye);
+	    ctx.bezierCurveTo(xm - ox, ye, x, ym + oy, x, ym);
+	    ctx.fillStyle = c || 'red';
+	    ctx.globalAlpha = options.alpha || 1;
+	    if (options.glow)
+	    	ctx.shadowBlur = options.glowWidth || 100;
+	    if (options.glowColor)
+			ctx.shadowColor = options.glowColor || 'aqua';
+		if (options.fill || options.fill == undefined)
+	    	ctx.fill();
+	    ctx.shadowBlur = 0;
+	    ctx.lineWidth = options.outlineWidth || 1;
+	    ctx.strokeStyle = options.outlineColor || 'black';
+	    if (options.outline)
+	    	ctx.stroke();
+	    ctx.closePath(); 
+	    ctx.restore();
+	}  
 
 	drawCircle(x, y, r, c, options) {
 		let {ctx} = this;

@@ -13,10 +13,8 @@ module.exports = class Turret {
 
 		this.barrelAngle = 0;
 		this.barrelHeading = new Vector(1, 0);
+		this.barrelShot = 0;
 
-		this.shootDelay = 200;
-		this.shootTime = 0;
-		this.bulletLifeTime = 1000;
 
 		this.viewRadius = 1000; // How far the turret can see
 
@@ -26,20 +24,28 @@ module.exports = class Turret {
 		this.id = planet.id;
 		this.turretId = id;
 
-		this.type = "turret"
-
 		this.range = 1000;
+
+		//this.type = Function.randInt(0, 1) == 0 ? "laser" : "seeking"; 
+		this.type = "laser"; 
+
+		this.shootDelay = this.type == "laser" ? 500 : 1000;
+		this.shootTime = 0;
+		this.bulletLifeTime = 1000;
 	}
 
 	update(planet, players, projectiles) {
 		if (this.health <= 0)
 			return;
+
+		this.barrelShot += 1;
+
 		// Update turret position
 		let spawnVector = Vector.rotate(new Vector(planet.radius, 0), this.angle);
 		this.pos = new Vector(planet.pos.x+spawnVector.x, planet.pos.y+spawnVector.y);
 
 		// Update outer turret tracking
-		let outerVector = Vector.rotate(new Vector(planet.radius + 5, 0), this.angle);
+		let outerVector = Vector.rotate(new Vector(planet.radius + 2, 0), this.angle);
 		let outerPos = Vector.add(outerVector, planet.pos);
 
 		// Find closest player and aim at it
@@ -56,7 +62,7 @@ module.exports = class Turret {
 				continue;
 			//let playerAlive = !p.crashed && p.fuel > 0 && p.integrity > 0;
 
-			if (Function.inRadialView(planet.pos.copy(), outerPos.copy(), new Vector(p.pos.x, p.pos.y), planet.radius) == false) {
+			if (Function.inRadialView(planet.pos.copy(), outerPos.copy(), new Vector(p.pos.x, p.pos.y), planet.radius) == false && p.alive) {
 				if (dist < closestDistance) {
 					closestDistance = dist;
 					closestPlayer = p;
@@ -100,6 +106,8 @@ module.exports = class Turret {
 
 		this.shootTime = Date.now();
 
+		this.barrelShot = 0;
+
 		let bulletPos = this.pos.copy();
 		let heading = this.barrelHeading.copy();
 		heading.mult(20);
@@ -117,13 +125,14 @@ module.exports = class Turret {
 		var missileData = {
 			pos: bulletPos,
 			vel: new Vector(),
+			acc: new Vector(),
 			heading: this.barrelHeading,
 			angle: this.barrelAngle,
-			color: "red",
-			speed: 1,
+			speed: this.type == "laser" ? 1 : 0.3,
 			time: Date.now(),
 			id: this.id,
-			type: "turret"
+			origin: "turret",
+			type: this.type
 		}
 
 		missiles.push(missileData);

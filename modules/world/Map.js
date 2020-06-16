@@ -72,6 +72,11 @@ module.exports = class Map {
 					if (distance < 30 && turret) {
 						collision = true;
 						turret.health -= 7;
+						this.newEffects.push({
+							pos: pos, 
+							type: "damage", 
+							options: {size: 20, alpha: 1, duration: 1000, text: -7, color: "red"}
+						})
 
 						if (turret.health <= 0)
 							delete this.planets[p.data.id].turrets[p.data.turretId];
@@ -84,7 +89,7 @@ module.exports = class Map {
 				}
 			}
 
-			let old = Date.now() - m.time > 3000;
+			let old = Date.now() - m.time > 1000;
 			if (old || collision) {
 				this.missiles.splice(i, 1);
 			}

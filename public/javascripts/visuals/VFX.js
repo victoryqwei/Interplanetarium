@@ -24,6 +24,7 @@ export default class Effect {
 		this.duration = options.duration || 1000;
 		this.size = options.size || 100;
 		this.color = options.color || "white";
+		this.text = options.text || undefined;
 	}
 
 	animate() {	
@@ -32,6 +33,10 @@ export default class Effect {
 		switch (this.type) {
 			case "explosion":
 				this.animateExplosion();
+			break;
+
+			case "damage":
+				this.animateDamage();
 			break;
 
 			default:
@@ -54,10 +59,23 @@ export default class Effect {
 			outlineColor: this.color, 
 		}
 
-		// Draw the circle
+		// Draw the drawCircle		
 		util.drawCircle(screenPos.x, screenPos.y, 0 + (this.size*zoom * (Date.now() - this.time)/this.duration), "white", options);
 		if (Date.now() - this.time > this.duration) {
 			this.finished = true;
+		}
+	}
+
+	animateDamage() {
+		let {util} = this;
+		let t = (Date.now() - this.time)/this.duration;
+
+		if (Date.now() - this.time > this.duration) {
+			this.finished = true;
+		} else {
+			let zoom = display.zoom;
+			let screenPos = getScreenPos(this.pos, zoom, game.rocket.pos);
+			drawText(this.text, screenPos.x, screenPos.y - (100 * t), "bold " + this.size + "px Arial", this.color, "middle", "center", this.alpha * Math.max((1-t), 0));
 		}
 	}
 }

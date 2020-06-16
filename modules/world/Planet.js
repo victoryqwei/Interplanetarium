@@ -55,7 +55,7 @@ module.exports = class Planet {
 		this.turrets = {};
 
 		// Set turret and base levels
-		let turretCount = 20;
+		let turretCount = 500;
 		let turretLevel = Function.randInt(1, 2);
 		
 		// Spawn turrets and bases
@@ -68,7 +68,7 @@ module.exports = class Planet {
 				let collision = false;
 				for (let id in this.turrets) {
 					let t = this.turrets[id];
-					if (Function.dist(pos, t.pos) < 100) {
+					if (Function.dist(pos, t.pos) < 40) {
 						collision = true;
 					}
 				}

@@ -52,28 +52,34 @@ io.on('connection', function(socket) {
 	let roomId = undefined;
 
 	// Join a room
-	socket.on("joinRoom", (id) => {
+	socket.on("joinRoom", (data) => {
 		if (!roomId) {
-	    	roomId = id;
+	    	roomId = data.id;
 
-			socket.join(id, () => {
-				if (!rooms[id]) {
-					rooms[id] = new Room(id, io);
+			socket.join(data.id, () => {
+				if (!rooms[data.id]) {
+					rooms[data.id] = new Room(data.id, io);
 				}
-				rooms[id].join(socket.id);
+				rooms[data.id].join(socket.id, data.name);
 			});
 		}
 	})
 	
 	// Receive updates from the player
 	socket.on('update', (data) => {
-		if (roomId)
+		if (roomId && rooms[roomId])
 			rooms[roomId].receivePlayerData(data);
 	})
 
 	// Latency check
 	socket.on('pingServer', function (data) {
 		socket.emit('pongServer', data);
+	})
+
+	// Receive log
+	socket.on('serverLog', (data) => {
+		if (roomId)
+			rooms[roomId].receiveLog(data);
 	})
 
 	// New level

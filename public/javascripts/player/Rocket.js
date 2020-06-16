@@ -38,10 +38,10 @@ export default class Rocket {
 		this.integrity = 100;
 		this.maxIntegrity = this.integrity;
 
-		this.crashed = false;
+		this.alive = true;
 
 		// Missiles
-		this.shootDelay = 200;
+		this.shootDelay = 100;
 		this.shootTime = Date.now();
 		this.newMissiles = [];
 
@@ -124,7 +124,7 @@ export default class Rocket {
 		
 		// Respawn
 		if (keys[82]) { // R
-			if (this.crashed || this.fuel <= 0 || this.integrity <= 0)
+			if (!this.alive || this.fuel <= 0 || this.integrity <= 0)
 				this.respawn();
 
 			if (keys[16]) // Shift + R
@@ -132,7 +132,7 @@ export default class Rocket {
 		}
 
 		// Steering
-		if (this.closestPlanetDistance > 5 && this.fuel > 0 && !this.crashed && this.integrity > 0) { // Make sure you don't steer while on planet
+		if (this.closestPlanetDistance > 5 && this.fuel > 0 && this.alive && this.integrity > 0) { // Make sure you don't steer while on planet
 			//this.angle = Math.atan2(angle.y, angle.x)+Math.PI/2;
 			if (keys[37] || keys[65]) {
 				this.steer = -1;
@@ -144,7 +144,7 @@ export default class Rocket {
 		}
 
 		// Check if there's still fuel
-		if (this.fuel > 0 && !this.crashed && this.integrity > 0) {
+		if (this.fuel > 0 && this.alive && this.integrity > 0) {
 			// Thrust
 			if (keys[38] || keys[87] || keys[32]) {
 				this.thrust = Math.min(this.maxThrust, this.thrust + this.thrustSpeed * delta / 16);
@@ -158,7 +158,7 @@ export default class Rocket {
 		}
 
 		// Shooting
-		if (mouse.left && Date.now() - this.shootTime > this.shootDelay) {
+		if ((mouse.left || keys[32]) && Date.now() - this.shootTime > this.shootDelay && this.alive) {
 			// Reset shooting delay
 			this.shootTime = Date.now();
 
@@ -173,13 +173,14 @@ export default class Rocket {
 			var missileData = {
 				pos: bulletPos,
 				vel: this.vel.copy(),
+				acc: new Vector(),
 				heading: playerHeading,
 				angle: playerAngle,
 				speed: 1,
-				color: "lime",
 				time: Date.now(),
 				id: socket.id,
-				type: "player"
+				origin: "player",
+				type: "laser"
 			}
 
 			game.missiles.push(missileData)
@@ -231,18 +232,23 @@ export default class Rocket {
 		let thrustForce = this.heading.copy();
 		thrustForce.mult(this.thrust);
 
+		
+
 		// Gravitational force
 		let gravForce = new Vector();
 		for (let id in game.screen.planets) {
 			let p = game.screen.planets[id];
 			gravForce.add(this.attract(p));
 		}
+
+
 		this.gForce = gravForce.getMag()/433;
 
 		let netForce = thrustForce.copy();
 		netForce.add(gravForce);
 		this.acc = netForce.copy();
 		this.acc.div(this.mass);
+
 		this.vel.add(this.acc);
 
 		this.speed = this.vel.getMag(); // Get speed in pixels per second
@@ -264,18 +270,18 @@ export default class Rocket {
 		this.fuel = constrain(newFuel, 0, this.maxFuel);
 
 		if (this.fuel <= 0) {
-			if(!this.crashed) {
+			if(this.alive) {
 				game.sendLog("fuel");
 			}
-			this.crashed = true;
+			this.alive = false;
 			this.thrust = 0;
 		}
 
 		if (this.integrity <= 0) {
-			if(!this.crashed) {
+			if(this.alive) {
 				game.sendLog("death");
 			}
-			this.crashed = true;
+			this.alive = false;
 			this.thrust = 0;
 		}
 
@@ -319,11 +325,12 @@ export default class Rocket {
 
 			if (this.speed > this.landingSpeed || !this.goodLanding) {
 				// High velocity or wrong landing
-				if (!this.crashed) {
+				if (this.alive) {
 					game.sendLog("crash");
 					vfx.add(this.pos, "explosion", {size: 100, alpha: 1, duration: 200})
+					vfx.add(this.pos, "damage", {size: 30, alpha: 1, duration: 1000, text: -this.integrity, color: "red"})
 				}
-				this.crashed = true;
+				this.alive = false;
 			} else {
 				// Perfect landing or Good landing
 				this.fuel = constrain(this.fuel + delta * 10, 0, this.maxFuel);
@@ -385,17 +392,22 @@ export default class Rocket {
 		this.vel = new Vector();
 		this.acc = new Vector();
 
-		this.crashed = false;
+		this.alive = true;
 		this.steer = 0;
 
 		this.fuel = this.maxFuel;
 		this.integrity = this.maxIntegrity;
 
 		socket.emit("respawn");
+		$("#minimap-container").show();
+		$("#interface-container").show();
 	}
 
-	static display(player, serverRocket, showParticles) {
+	static display(player, serverRocket, showParticles, name) {
 		if (!player) {
+			return;
+		}
+		if (!player.alive) {
 			return;
 		}
 		// Draw the player
@@ -450,6 +462,10 @@ export default class Rocket {
         drawTriangle(0, height/4, width/1.5, -width/1.5, 0, pSBC(-0.05, pSBC(Math.max(-(1-(player.integrity/100)), -1), "#d3d3d3", false, true), false, true));
 
         ctx.restore();
+        
+        if(/*serverRocket && */!display.warp)
+        	drawText(name, pos.x, pos.y - height*1.2, 20+ "px Arial", "white", "center", "middle", 1);
+    
 	}
 
 	static addParticles(player) {
