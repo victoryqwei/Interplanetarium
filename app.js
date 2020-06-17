@@ -79,13 +79,13 @@ io.on('connection', function(socket) {
 	// Receive log
 	socket.on('serverLog', (data) => {
 		if (roomId)
-			rooms[roomId].receiveLog(data);
+			rooms[roomId].receiveLog(data, socket.id);
 	})
 
 	// New level
 	socket.on('newLevel', (data) => {
 		if (roomId)
-			rooms[roomId].createNewLevel(data);
+			rooms[roomId].nextStage(socket.id);
 	})
 
 	// Disconnect

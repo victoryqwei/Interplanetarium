@@ -8,16 +8,12 @@ module.exports = class Turret {
 		this.pos = new Vector(planet.pos.x+spawnVector.x, planet.pos.y+spawnVector.y);
 		this.heading = spawnVector.normalize();
 		this.angle = angle;
-
 		this.radius = 70;
 
 		this.barrelAngle = 0;
 		this.barrelHeading = new Vector(1, 0);
 		this.barrelShot = 0;
-
-
 		this.viewRadius = 1000; // How far the turret can see
-
 		this.level = level || 1;
 
 		this.health = 20;
@@ -25,9 +21,7 @@ module.exports = class Turret {
 		this.turretId = id;
 
 		this.range = 1000;
-
-		//this.type = Function.randInt(0, 1) == 0 ? "laser" : "seeking"; 
-		this.type = "laser"; 
+		this.type = Function.randInt(0, 1) == 0 ? "laser" : "seeking"; 
 
 		this.shootDelay = this.type == "laser" ? 500 : 1000;
 		this.shootTime = 0;
@@ -128,7 +122,7 @@ module.exports = class Turret {
 			acc: new Vector(),
 			heading: this.barrelHeading,
 			angle: this.barrelAngle,
-			speed: this.type == "laser" ? 1 : 0.3,
+			speed: this.type == "laser" ? 1 : 0.6,
 			time: Date.now(),
 			id: this.id,
 			origin: "turret",

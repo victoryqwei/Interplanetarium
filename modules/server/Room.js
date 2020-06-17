@@ -26,7 +26,11 @@ module.exports = class Room {
 
 		// Map
 
-		this.map = new Map(50);
+		this.stages = [];
+
+		for (let i = 0; i < 10; i++) {
+			this.stages.push(new Map(i));
+		}
 
 		// Log
 
@@ -34,34 +38,51 @@ module.exports = class Room {
 	}
 
 	update(io) {
-		// Update map
-		this.map.update(this.players);
+		// Update stages
+		for (let level of this.stages) {
+			level.update(this.getPlayers(level.stage));
+		}
 
 		// Send data to clients
 		this.sendData(io);
 	}
 
 	// Create new level
-	createNewLevel(data) {
-		// Generate level
-		this.map = new Map(100);
-
+	nextStage(playerId) {
 		// Update client level data
+		this.players[playerId].stage += 1;
+		this.io.to(playerId).emit("levelData", this.stages[this.players[playerId].stage]);
+
 		for (let id in this.players) {
-			this.io.to(id).emit("levelData", this.map);
+			if (this.players[id].stage == this.players[playerId].stage-1)
+				this.io.to(id).emit("playerDisconnect", playerId);
 		}
+	}
+
+	// Get the players of a certain stage
+	getPlayers(stage) {
+		let players = {};
+
+		for (let id in this.players) {
+			if (this.players[id].stage == stage) {
+				players[id] = this.players[id];
+			}
+		}
+
+		return players;
 	}
 
 	// Player joins the room
 	join(id, name) {
 		this.players[id] = {
 			id: id,
-			name: name
+			name: name,
+			stage: 0
 		}
 		console.log(this.players[id].name + " joined room", this.id, "with id:", id, Date())
 		this.io.to(this.id).emit("msg", "Joined room "+ this.id + " with id: " + id + " " + Date());
 
-		this.io.to(id).emit("levelData", this.map);
+		this.io.to(id).emit("levelData", this.stages[this.players[id].stage]);
 	}
 
 	// Leave room
@@ -78,14 +99,16 @@ module.exports = class Room {
 				m.time = Date.now();
 			}
 
-			this.map.missiles = this.map.missiles.concat(data.missiles);
-			this.map.newMissiles = this.map.newMissiles.concat(data.missiles);
-			this.map.newEffects = this.map.newEffects.concat(data.effects);
+			let stage = this.stages[this.players[data.id].stage]
+
+			stage.missiles = stage.missiles.concat(data.missiles);
+			stage.newMissiles = stage.newMissiles.concat(data.missiles);
+			stage.newEffects = stage.newEffects.concat(data.effects);
 		}
 	}
 
 	// Receive player log
-	receiveLog(data) {
+	receiveLog(data, playerId) {
 		let messages = {
 			death: ["felt the laser power",
 			"was burnt to a crisp", 
@@ -113,7 +136,7 @@ module.exports = class Room {
 			"should have checked the fuel gage"]
 		}
 
-		let msg = data.name + " " + messages[data.type][Util.randInt(0, messages[data.type].length-1)];
+		let msg = data.name + " " + messages[data.type][Util.randInt(0, messages[data.type].length-1)] + " [Stage " + (this.players[playerId].stage + 1) + "]";
 
 		this.newLog.push(msg);
 	}
@@ -121,18 +144,20 @@ module.exports = class Room {
 	// Send data
 	sendData(io) {
 		for (let id in this.players) {
+			let stage = this.stages[this.players[id].stage]
+
 			// Only send map data in client's viewing range
 			let map = {
 				planets: {},
-				missiles: this.map.newMissiles,
-				effects: this.map.newEffects
+				missiles: stage.newMissiles,
+				effects: stage.newEffects
 			}
 
 			// Get planets in viewing range
 			let rocket = this.players[id].rocket;
 			if (rocket) {
 				let range = new Rectangle(rocket.pos.x, rocket.pos.y, 2000, 2000);
-				let points = this.map.qtree.query(range);
+				let points = stage.qtree.query(range);
 				for (let p of points) {
 					if (p.data instanceof Planet) {
 						let planet = p.data;
@@ -144,15 +169,17 @@ module.exports = class Room {
 
 			// Send update
 			io.to(id).emit('update', {
-				players: this.players,
+				players: this.getPlayers(this.players[id].stage),
 				map: map,
 				log: this.newLog
 			})
 		}
 
-		this.newLog = [];
-		this.map.newMissiles = [];
-		this.map.newEffects = [];
-		
+		// Reset
+		for (let stage of this.stages) {
+			this.newLog = [];
+			stage.newMissiles = [];
+			stage.newEffects = [];
+		}
 	}
 }

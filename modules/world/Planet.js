@@ -55,7 +55,7 @@ module.exports = class Planet {
 		this.turrets = {};
 
 		// Set turret and base levels
-		let turretCount = 500;
+		let turretCount = 10;
 		let turretLevel = Function.randInt(1, 2);
 		
 		// Spawn turrets and bases

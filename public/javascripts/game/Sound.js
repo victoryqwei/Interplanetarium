@@ -26,6 +26,8 @@ export default class Sound {
 	}
 
 	setup() {
+
+		// Define wavesurfer
 		let {wavesurfer, segments} = this;
 
 		// Load music
@@ -48,7 +50,7 @@ export default class Sound {
 	}
 
 	music() {
-		if (this.segments.length == 0 || display.state == "play" || !this.beatDetection)
+		if (this.segments.length == 0 || game.state == "play" || !this.beatDetection)
 			return;
 
 		var {wavesurfer} = this;

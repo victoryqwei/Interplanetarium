@@ -5,23 +5,27 @@ Used to draw everything to the screen.
 */
 
 import Stars from "../world/Stars.js";
-import Planet from "../world/Planet.js";
 import Rocket from "../player/Rocket.js";
 import Vector from "../util/Vector.js";
 import {vfx} from "./VFXManager.js";
 import {input} from "../game/input.js";
 import {game} from "../game/Game.js";
 import {Rectangle} from "../util/QuadTree.js";
+import {camera} from '../visuals/Camera.js';
+import {draw} from "../visuals/Draw.js";
+import Style from "../visuals/Style.js";
+import {util} from "../util/Util.js";
 
 export default class Animate {
 	constructor() {
+		this.style = new Style(ctx);
 		this.stars = new Stars(1000);
 	}
 
 	animateAll() {
 		this.animateBackground();
 		this.animateStars();
-		if (display.state == "play") {
+		if (game.state == "play") {
 			this.animateMissiles();
 			this.animatePlanets();
 			this.animateRocket();
@@ -31,8 +35,9 @@ export default class Animate {
 	}
 
 	animateBackground() {
+		let {style} = this;
 		ctx.clearRect(0, 0, canvas.width, canvas.height)
-		drawRectangle(0, 0, canvas.width, canvas.height, "#000408")
+		style.drawRectangle(0, 0, canvas.width, canvas.height, "#000408")
 	}
 
 	animateStars() {
@@ -40,13 +45,13 @@ export default class Animate {
 	}
 
 	animateRocket() {
-		Rocket.display(game.rocket, false, true, game.rocket.name);
+		draw.drawRocket(game.rocket, false, true, game.rocket.name);
 	}
 
 	animatePlayers() {
 		for (let id in game.players) {
 			if (id != socket.id)
-				Rocket.display(game.players[id].rocket, true, true, game.players[id].name);
+				draw.drawRocket(game.players[id].rocket, true, true, game.players[id].name);
 		}
 	}
 
@@ -55,20 +60,22 @@ export default class Animate {
 			return;
 		for (let id in game.screen.planets) {
 			let planet = game.screen.planets[id];
-			Planet.display(planet.pos, planet.radius, planet.type, {
+			draw.drawPlanet(planet.pos, planet.radius, planet.type, {
 				color: planet.color,
 				strokeColor: planet.strokeColor
 			});
-			Planet.displayTurret(planet);
+			draw.drawTurret(planet);
 		}
 	}
 
 	animateMissiles() {
 
-		if (display.warp)
+		let {style} = this;
+
+		if (camera.warp)
 			return;
 
-		let zoom = display.zoom;
+		let zoom = camera.zoom;
 		let rocket = game.rocket;
 
 		for (let i = game.missiles.length-1; i >= 0; i--) {
@@ -92,7 +99,7 @@ export default class Animate {
 			}
 
 			// Seeking missile
-			if (m.type == "seeking" && getDistance(m.pos, rocket.pos) < 1000) {
+			if (m.type == "seeking" && util.getDistance(m.pos, rocket.pos) < 1000) {
 				let target = Vector.normalize(Vector.sub(rocket.pos, pos))
 				m.acc = target;
 				m.vel = Vector.add(m.vel, Vector.mult(m.acc, t));
@@ -104,18 +111,18 @@ export default class Animate {
 			pos.add(Vector.mult(m.vel, t/1000));
 
 			// Draw the missile
-			let screenPos = getScreenPos(pos, display.zoom, game.rocket.pos);
-			drawRect(screenPos.x, screenPos.y, 24*zoom, 8*zoom, m.angle, color);
+			let screenPos = util.getScreenPos(pos, camera.zoom, camera.pos);
+			style.drawRect(screenPos.x, screenPos.y, 24*zoom, 8*zoom, m.angle, color);
 
 			// Check if projectile is too old
 			let old = t > 1000/m.speed;
-			let playerCollision = m.id != socket.id && getDistance(rocket.pos.x, rocket.pos.y, pos.x, pos.y) < 40;
+			let playerCollision = m.id != socket.id && util.getDistance(rocket.pos.x, rocket.pos.y, pos.x, pos.y) < 40;
 			let planetCollision = false;
 
 			for (let id in game.screen.planets) {
 				let planet = game.screen.planets[id];
 
-				if (getDistance(planet.pos.x, planet.pos.y, pos.x, pos.y) < planet.radius)
+				if (util.getDistance(planet.pos.x, planet.pos.y, pos.x, pos.y) < planet.radius)
 					planetCollision = true;
 			}
 

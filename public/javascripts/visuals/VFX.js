@@ -4,14 +4,16 @@ Draw the Effects
 
 */
 
-import Util from "../util/Util.js";
+import Style from "../visuals/Style.js";
 import {game} from "../game/Game.js";
+import {camera} from "../visuals/Camera.js";
+import {util} from "../util/Util.js";
 
 export default class Effect {
 	constructor(pos, type, options) {
 
 		// Util
-		this.util = new Util(ctx);
+		this.style = new Style(ctx);
 
 		// Define
 		this.pos = pos;
@@ -47,10 +49,10 @@ export default class Effect {
 	animateExplosion() {
 
 		// Animate the explosion
-		let {util} = this;
-		let zoom = display.zoom;
+		let {style} = this;
+		let zoom = camera.zoom;
 		
-		let screenPos = getScreenPos(this.pos, zoom, game.rocket.pos);
+		let screenPos = util.getScreenPos(this.pos, zoom, camera.pos);
 
 		let options = {
 			fill: false,
@@ -60,22 +62,22 @@ export default class Effect {
 		}
 
 		// Draw the drawCircle		
-		util.drawCircle(screenPos.x, screenPos.y, 0 + (this.size*zoom * (Date.now() - this.time)/this.duration), "white", options);
+		style.drawCircle(screenPos.x, screenPos.y, 0 + (this.size*zoom * (Date.now() - this.time)/this.duration), "white", options);
 		if (Date.now() - this.time > this.duration) {
 			this.finished = true;
 		}
 	}
 
 	animateDamage() {
-		let {util} = this;
+		let {style} = this;
 		let t = (Date.now() - this.time)/this.duration;
 
-		if (Date.now() - this.time > this.duration) {
+		if (t >= 1) {
 			this.finished = true;
 		} else {
-			let zoom = display.zoom;
-			let screenPos = getScreenPos(this.pos, zoom, game.rocket.pos);
-			drawText(this.text, screenPos.x, screenPos.y - (100 * t), "bold " + this.size + "px Arial", this.color, "middle", "center", this.alpha * Math.max((1-t), 0));
+			let zoom = camera.zoom;
+			let screenPos = util.getScreenPos(this.pos, zoom, camera.pos);
+			style.drawText(this.text, screenPos.x, screenPos.y - (100 * t), "bold " + this.size + "px Arial", this.color, "middle", "center", Math.max(this.alpha * (1-t), 0));
 		}
 	}
 }

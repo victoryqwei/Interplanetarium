@@ -5,6 +5,7 @@ Handles all the visual effects of the game
 */
 
 import VFX from "../visuals/VFX.js";
+import {camera} from '../visuals/Camera.js';
 
 class VFXManager {
 	constructor() {
@@ -27,7 +28,7 @@ class VFXManager {
 	}
 
 	animate() {
-		if (display.warp)
+		if (camera.warp)
 			return;
 		
 		for (let effect of this.effects) {

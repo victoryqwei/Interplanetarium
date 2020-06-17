@@ -5,6 +5,8 @@ Used to manage the UI of the menu
 */
 
 import {game} from "../game/Game.js";
+import {camera} from '../visuals/Camera.js';
+import {util} from "../util/Util.js";
 
 (function () {
 
@@ -18,7 +20,7 @@ import {game} from "../game/Game.js";
 		if (!roomId) {
 			let id = window.location.pathname.replace("/", "") || randomString(7);
 			console.log("Joining room with id", id);
-			let username = $("#username").val() || ("Player" + randInt(1000, 9999));
+			let username = $("#username").val() || ("Player" + util.randInt(1000, 9999));
 			socket.emit("joinRoom", {
 				id: id,
 				name: username
@@ -27,7 +29,7 @@ import {game} from "../game/Game.js";
 			game.rocket.name = username;
 
 			roomId = id;
-			display.warp = true;
+			camera.warp = true;
 
 			// Start the game
 			game.start();

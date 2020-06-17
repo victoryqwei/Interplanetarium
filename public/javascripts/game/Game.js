@@ -8,6 +8,7 @@ Stores all the variables for the game
 import Rocket from "../player/Rocket.js";
 import Sound from "./Sound.js";
 import {vfx} from "../visuals/VFXManager.js";
+import {camera} from "../visuals/Camera.js";
 import {QuadTree, Rectangle, Point} from "../util/QuadTree.js"
 
 class Game {
@@ -35,6 +36,8 @@ class Game {
 		this.sound = new Sound();
 
 		this.log = [];
+
+		this.state = "menu"; // "menu", "play", "settings", "starmap"
 	}
 
 	update() {
@@ -42,6 +45,7 @@ class Game {
 
 		this.rocket.update();
 		this.sound.music();
+		camera.update();
 	}
 
 	start() { // Starts the game - This officially starts the game process
@@ -70,7 +74,7 @@ class Game {
 			vfx.newEffects = [];
 		}, tick)
 
-		display.state = "play";
+		this.state = "play";
 	}
 
 	updateScreen() {
@@ -83,12 +87,11 @@ class Game {
 			players: {}
 		}
 
-		let zoom = display.zoom;
-		let rocket = this.rocket;
+		let zoom = camera.zoom;
 
 		// Update screen objects
-		let range = new Rectangle(rocket.pos.x, rocket.pos.y, canvas.width/zoom, canvas.height/zoom);
-		if (display.warp)
+		let range = new Rectangle(camera.pos.x, camera.pos.y, canvas.width/zoom, canvas.height/zoom);
+		if (camera.warp)
 			range = new Rectangle(0, 0, this.map.mapRadius, this.map.mapRadius);
 		let points = this.mapQ.query(range);
 
@@ -158,6 +161,8 @@ class Game {
 	}
 
 	receiveLevelData(data) {
+		this.players = {};
+
 		this.map = data;
 
 		// Create map quadtree
@@ -175,8 +180,8 @@ class Game {
 		}
 
 		// Warp to level location
-		display.warp = true;
-		display.mapZ = 0.00001;
+		camera.warp = true;
+		camera.mapZ = 0.00001;
 
 	}
 

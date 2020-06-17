@@ -8,36 +8,12 @@ This file should be kept very short as all the logic should be done in other fil
 import Animate from '../visuals/Animate.js'
 import UI from '../ui/Interface.js'
 import {game} from "./Game.js";
+import {camera} from "../visuals/Camera.js";
 
 (function () {
-
-	// Instantiate the canvas
-	window.canvas = document.getElementById("game-canvas");
-	window.ctx = canvas.getContext("2d");
-	canvas.width = window.innerWidth;
-	canvas.height = window.innerHeight;
-	$(window).resize(function () {
-		canvas.width = window.innerWidth;
-		canvas.height = window.innerHeight;
-	})
-
 	// Initialize classes
 	var animate = new Animate();
 	var ui = new UI();
-
-	// Setup
-	function setup() {
-
-		// Set display setting
-		window.display = {
-			zoom: 0.6,
-			maxZoom: 3,
-			minZoom: 0.6,
-			mapZ: 0.00001,
-			warp: false
-		}
-		display.state = "menu"; // "menu", "play", "settings", "starmap"
-	}
 
 	// Update loop
 	function update() {
@@ -80,7 +56,6 @@ import {game} from "./Game.js";
 	        averageFps = fpsArray.reduce((a, b) => a + b, 0) / fpsArray.length;
 	    }
 	}
-
-	setup();
+	
 	loop();
 }())

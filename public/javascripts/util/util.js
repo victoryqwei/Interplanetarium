@@ -1,402 +1,379 @@
-export default class Util {
-	constructor(ctx) {
-		this.ctx = ctx;
+import Vector from "../util/Vector.js";
+import {camera} from '../visuals/Camera.js';
+
+class Util {
+	constructor() {
+		this.now = true;
 	}
 
-	drawCompass(x, y, base, height, angle, c) {
-		let {ctx} = this;
-
-      	ctx.save();
-	 	ctx.translate(x, y);
-		ctx.rotate(angle);
-        ctx.beginPath();
-        var path = new Path2D();
-	    path.moveTo(-base/2,height/2);
-	    path.lineTo(0,-height/2);
-	    path.lineTo(base/2,height/2);
-	    
-	    path.lineTo(0,height/4);
-	    path.lineTo(-base/2,height/2);
-	    path.lineTo(0,-height/2);
-	    ctx.fillStyle = c || "red";
-	    ctx.fill(path);
-
-	    ctx.closePath();
-        ctx.restore()
-    }
-
-	drawTrapezoid(x, y, w, h, i) {
-		let {ctx} = this;
-
-		ctx.save();
-	    ctx.beginPath();
-	    ctx.moveTo(x + i, y);
-	    ctx.lineTo(x - i + w, y);
-	    ctx.lineTo(x + w, y + h);
-	    ctx.lineTo(x, y + h);
-	    ctx.lineTo(x + i, y);
-	    ctx.lineTo(x - i + w, y);
-
-	    ctx.lineJoin = "miter";
-		ctx.strokeStyle = "white";
-		ctx.lineWidth = 7;
-	    ctx.stroke();
-	    ctx.closePath();
-	    ctx.restore();
+	getRandomRgb() {
+		var num = Math.round(0xffffff * Math.random());
+		var r = num >> 16;
+		var g = num >> 8 & 255;
+		var b = num & 255;
+		return 'rgb(' + r + ', ' + g + ', ' + b + ')';
 	}
 
-
-	drawPolygon(x, y, r, s, c, options) {
-		let {ctx} = this;
-
-		if (!options)
-		options = {};
-
-		ctx.save();
-		ctx.beginPath();
-		ctx.moveTo (x +  r * Math.cos(0), y +  r *  Math.sin(0));          
-
-		for (var i = 1; i <= s;i += 1) {
-		  ctx.lineTo (x + r * Math.cos(i * 2 * Math.PI / s), y + r * Math.sin(i * 2 * Math.PI / s));
-		}
-
-		ctx.lineJoin = "miter";
-		ctx.strokeStyle = c || "white";
-		ctx.lineWidth = 7;
-		ctx.stroke();
-	    ctx.closePath();
-	    ctx.restore();
+	getRandomHEX() {
+		var randomColor = "#000000".replace(/0/g,function(){return (~~(Math.random()*16)).toString(16);});
+		return randomColor;
+	}
+	// Create an RGB value from a hex value
+	hexToRgb(hex) {
+	    var result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+	    return result ? {
+	        r: parseInt(result[1], 16),
+	        g: parseInt(result[2], 16),
+	        b: parseInt(result[3], 16)
+	    } : null;
 	}
 
-	drawEllipse(x, y, w, h, c, options) {
-		let {ctx} = this;
+	// Create an hex value from a RGB value
+	rgbToHex(rgb) { 
+	  var hex = Number(rgb).toString(16);
+	  if (hex.length < 2) {
+	       hex = "0" + hex;
+	  }
+	  return hex;
+	};
 
-		if (!options)
-			options = {};
+	// Random ID
 
-		ctx.save();
-	    var kappa = .5522848,
-	    ox = (w / 2) * kappa, // control point offset horizontal
-	    oy = (h / 2) * kappa, // control point offset vertical
-	    xe = x + w,           // x-end
-	    ye = y + h,           // y-end
-	    xm = x + w / 2,       // x-middle
-	    ym = y + h / 2;       // y-middle
+	randomString(length) {
+	    var chars = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghiklmnopqrstuvwxyz'.split('');
 
-	    ctx.beginPath();
-	    ctx.moveTo(x, ym);
-	    ctx.bezierCurveTo(x, ym - oy, xm - ox, y, xm, y);
-	    ctx.bezierCurveTo(xm + ox, y, xe, ym - oy, xe, ym);
-	    ctx.bezierCurveTo(xe, ym + oy, xm + ox, ye, xm, ye);
-	    ctx.bezierCurveTo(xm - ox, ye, x, ym + oy, x, ym);
-	    ctx.fillStyle = c || 'red';
-	    ctx.globalAlpha = options.alpha || 1;
-	    if (options.glow)
-	    	ctx.shadowBlur = options.glowWidth || 100;
-	    if (options.glowColor)
-			ctx.shadowColor = options.glowColor || 'aqua';
-		if (options.fill || options.fill == undefined)
-	    	ctx.fill();
-	    ctx.shadowBlur = 0;
-	    ctx.lineWidth = options.outlineWidth || 1;
-	    ctx.strokeStyle = options.outlineColor || 'black';
-	    if (options.outline)
-	    	ctx.stroke();
-	    ctx.closePath(); 
-	    ctx.restore();
-	}  
-
-	drawCircle(x, y, r, c, options) {
-		let {ctx} = this;
-
-		if (!options)
-			options = {};
-
-		ctx.save();
-		ctx.beginPath();
-		ctx.arc(x, y, r, 0, 2 * Math.PI, false);
-	    ctx.fillStyle = c || 'red';
-	    ctx.globalAlpha = options.alpha || 1;
-	    if (options.glow)
-	    	ctx.shadowBlur = options.glowWidth || 100;
-	    if (options.glowColor)
-			ctx.shadowColor = options.glowColor || 'aqua';
-		if (options.fill || options.fill == undefined)
-	    	ctx.fill();
-	    ctx.shadowBlur = 0;
-	    ctx.lineWidth = options.outlineWidth || 1;
-	    ctx.strokeStyle = options.outlineColor || 'black';
-	    if (options.outline)
-	    	ctx.stroke();
-	    ctx.closePath();
-	    ctx.restore();
-	}
-
-	drawRectangle(x, y, w, h, c, options) {
-		let {ctx} = this;
-
-		if (!options)
-			options = {};
-
-		ctx.save();
-		ctx.translate(x, y);
-		ctx.beginPath();
-		ctx.rect(0, 0, w, h);
-		ctx.fillStyle = c || 'black';
-		ctx.globalAlpha = options.alpha || 1;
-		if (options.fill == undefined || options.fill)
-			ctx.fill();
-		ctx.strokeStyle = options.outlineColor || "black";
-		ctx.lineWidth = options.outlineWidth || 1;
-		if (options.outline)
-			ctx.stroke();
-		ctx.closePath();
-		ctx.restore();
-	}
-
-	// Draw rectangle but centered
-	drawRect(x, y, w, h, d, c, options) {
-		let {ctx} = this;
-
-		if (!options)
-			options = {};
-
-		ctx.save();
-		ctx.translate(x, y)
-		ctx.rotate(d);
-		ctx.beginPath();
-
-		ctx.rect(-w/2, -h/2, w, h);
-		ctx.fillStyle = c || 'grey';
-		ctx.globalAlpha = options.alpha || 1;
-			ctx.fill();
-		ctx.globalAlpha = 1;
-
-		ctx.closePath();
-		ctx.resetTransform();
-		ctx.restore();
-	}
-
-	drawRoundedRect(x, y, w, h, r, c, options) {
-		let {ctx} = this;
-
-		if (!options)
-			options = {};
-		
-		// Draw rounded rectangle
-	    ctx.beginPath();
-	    ctx.moveTo(x+r, y);
-	    ctx.lineTo(x+w-r, y);
-	    ctx.quadraticCurveTo(x+w, y, x+w, y+r);
-	    ctx.lineTo(x+w, y+h-r);
-	    ctx.quadraticCurveTo(x+w, y+h, x+w-r, y+h);
-	    ctx.lineTo(x+r, y+h);
-	    ctx.quadraticCurveTo(x, y+h, x, y+h-r);
-	    ctx.lineTo(x, y+r);
-	    ctx.quadraticCurveTo(x, y, x+r, y);
-	    ctx.fillStyle = c || 'grey';
-		ctx.globalAlpha = options.alpha || 1;
-			ctx.fill();
-		ctx.globalAlpha = 1;
-	}
-
-	drawRotatedRoundedRect(x, y, w, h, r, c, d, options) {
-		let {ctx} = this;
-
-		if (!options)
-			options = {};
-
-		ctx.translate(x, y);
-		ctx.rotate(d);
-		
-		ctx.moveTo(-w/2+r, -h/2);
-	    ctx.lineTo(-w/2+w-r, -h/2);
-	    ctx.quadraticCurveTo(-w/2+w, -h/2+0, -w/2+w, -h/2+0+r);
-	   	ctx.lineTo(-w/2+w, -h/2+h-r);
-	    ctx.quadraticCurveTo(-w/2+w, -h/2+h, -w/2+w-r, -h/2+h);
-	    ctx.lineTo(-w/2+r, -h/2+h);
-	    ctx.quadraticCurveTo(-w/2, -h/2+h, -w/2, -h/2+h-r);
-	    ctx.lineTo(-w/2, -h/2+r);
-	    ctx.quadraticCurveTo(-w/2, -h/2, -w/2+r, -h/2);
-
-	    ctx.fillStyle = c || 'grey';
-		ctx.globalAlpha = options.alpha || 1;
-		ctx.lineWidth = 3*display.zoom;
-			ctx.fill();
-		ctx.globalAlpha = 1;
-
-		ctx.closePath();
-		ctx.resetTransform();
-	}
-
-	drawStar(cx, cy, spikes, outerRadius, innerRadius) {
-		let {ctx} = this;
-
-	    var rot = Math.PI / 2 * 3;
-	    var x = cx;
-	    var y = cy;
-	    var step = Math.PI / spikes;
-
-	    ctx.strokeSyle = "#000";
-	    ctx.beginPath();
-	    ctx.moveTo(cx, cy - outerRadius)
-	    for (i = 0; i < spikes; i++) {
-	        x = cx + Math.cos(rot) * outerRadius;
-	        y = cy + Math.sin(rot) * outerRadius;
-	        ctx.lineTo(x, y)
-	        rot += step
-
-	        x = cx + Math.cos(rot) * innerRadius;
-	        y = cy + Math.sin(rot) * innerRadius;
-	        ctx.lineTo(x, y)
-	        rot += step
+	    if (! length) {
+	        length = Math.floor(Math.random() * chars.length);
 	    }
-	    ctx.lineTo(cx, cy - outerRadius)
-	    ctx.closePath();
-	    ctx.fillStyle='white';
-	    ctx.fill();
 
+	    var str = '';
+	    for (var i = 0; i < length; i++) {
+	        str += chars[Math.floor(Math.random() * chars.length)];
+	    }
+	    return str;
 	}
 
-	drawCheckmark(x, y, size, width) {
-		let {ctx} = this;
-
-		ctx.beginPath();
-		ctx.moveTo(x-size, y);
-		ctx.lineTo(x,y+size);
-		ctx.lineTo(x+size*2,y-size);
-		ctx.lineWidth = width;
-		ctx.strokeStyle = '#fff';
-		ctx.stroke();
-		ctx.closePath(); 
-	}
-
-	drawImage(img, x, y, w, h, angle) {
-		let {ctx} = this;
-
-		ctx.beginPath();
-		ctx.translate(x, y);
-		ctx.rotate(angle);
-		ctx.drawImage(img, -w, -h, w*2, h*2);
-		ctx.resetTransform();
-		ctx.closePath();
-	}
-
-	drawCircleImage(img, x, y, r, angle) {
-		let {ctx} = this;
-
-		ctx.translate(x, y)
-		ctx.rotate(angle);
-		ctx.drawImage(img, -r, -r, r*2, r*2);
-		ctx.resetTransform();
-	}
-
-	drawLine(x1, y1, x2, y2, color, thickness, cap, alpha) {
-		let {ctx} = this;
-
-		ctx.beginPath();
-		ctx.lineWidth = thickness;
-		ctx.moveTo(x1, y1);
-		ctx.lineTo(x2, y2);
-		ctx.globalAlpha = alpha || 1;
-		ctx.strokeStyle = color || "black";
-		ctx.lineCap = cap || "default";
-		ctx.stroke();
-		ctx.globalAlpha = 1;
-		ctx.closePath();
-	}
-
-	drawText(text, x, y, font, color, align, baseline, alpha) {
-		let {ctx} = this;
-
-		let options = {};
-		if (font instanceof Object) {
-			options = font;
+	// Math functions
+	constrain(value, a, b) {
+		if (value < a) {
+			return a;
+		} else if (value > b) {
+			return b;
+		} else {
+			return value;
 		}
-		ctx.beginPath();
-		ctx.font = options.font || font || "20px Arial";
-		ctx.fillStyle = options.color || color || "red";
-		ctx.textAlign = options.align || align || "default";
-		ctx.globalAlpha = alpha || 1;
-		ctx.textBaseline = options.baseline || baseline || "default";
-		ctx.fillText(text, x, y);
-		ctx.globalAlpha = 1;
-		ctx.closePath();
 	}
 
-	drawArrow(x1, y1, x2, y2, thickness, color, alpha, cap){
-		let {ctx} = this;
-
-		ctx.beginPath();
-		ctx.lineWidth = thickness || 2;
-		ctx.strokeStyle = color || "black";
-		ctx.globalAlpha = alpha || 1;
-		ctx.lineCap = cap || "butt";
-	    var headlen = 10;   // length of head in pixels
-	    var angle = Math.atan2(y2-y1,x2-x1);
-	    ctx.moveTo(x1, y1);
-	    ctx.lineTo(x2, y2);
-	    ctx.lineTo(x2-headlen*Math.cos(angle-Math.PI/6),y2-headlen*Math.sin(angle-Math.PI/6));
-	    ctx.moveTo(x2, y2);
-	    ctx.lineTo(x2-headlen*Math.cos(angle+Math.PI/6),y2-headlen*Math.sin(angle+Math.PI/6));
-	    ctx.stroke();
-	    ctx.closePath();
-	    ctx.globalAlpha = 1;
+	random(min, max) {
+		return Math.random() * (max - min) + min;
 	}
 
-	drawTriangle(x, y, base, height, angle, color) {
-		let {ctx} = this;
-	 	
-	 	ctx.save();
-	 	ctx.translate(x, y)
-		ctx.rotate(angle);
-		ctx.beginPath();
-
-	    var path =new Path2D();
-	    path.moveTo(-base/2,height/2);
-	    path.lineTo(0,-height/2);
-	    path.lineTo(base/2,height/2);
-	    path.lineTo(-base/2,height/2);
-	    path.lineTo(0,-height/2);
-	    ctx.miterLimit = 10;
-	    ctx.lineJoin = "miter";
-	    ctx.lineWidth = 7;
-	    ctx.fillStyle = color || "black";
-	    ctx.strokeStyle = color || "black";
-	    ctx.fill(path);
-
-	   	ctx.closePath();
-		ctx.resetTransform();
-		ctx.restore();
+	randInt(min, max) {
+		return Math.round(Math.random() * (max - min) + min);
 	}
 
-	drawWarning(x, y, base, height, angle, color, alpha) {
-		let {ctx} = this;
-	 	
-	 	ctx.save();
-	 	ctx.translate(x, y)
-		ctx.rotate(angle);
-		ctx.beginPath();
-		ctx.globalAlpha = alpha || 1;
-	    var path =new Path2D();
-	    path.moveTo(-base/2,height/2);
-	    path.lineTo(0,-height/2);
-	    path.lineTo(base/2,height/2);
-	    path.lineTo(-base/2,height/2);
-	    path.lineTo(0,-height/2);
-	    ctx.miterLimit = 10;
-	    ctx.lineJoin = "miter";
-	    ctx.lineWidth = 15;
-	    ctx.fillStyle = color || "black";
-	    ctx.strokeStyle = color || "black";
-	    ctx.lineJoin = "round";
-	    ctx.fill(path);
-	    ctx.stroke(path);
+	getRandomInt(max) {
+	  return Math.floor(Math.random() * Math.floor(max));
+	}
 
-	    this.drawText("!", 0, height/6, "bold " + height/1.7 + "px Arial", "white", "center", "middle", 1);
+	// Return a random vector that is uniformly distributed within a circle given a radius
+	randCircle(radius) { 
+		var r = radius * Math.sqrt(Math.random());
+		var theta = Math.random() * 2 * Math.PI;
 
-	   	ctx.closePath();
-		ctx.resetTransform();
-		ctx.restore();
+		return new Vector(r * Math.cos(theta), r * Math.sin(theta));
+	}
+
+	randomProperty(obj) {
+	    var keys = Object.keys(obj)
+	    return obj[keys[ keys.length * Math.random() << 0]];
+	}
+
+	randn_bm() {
+	    var u = 0, v = 0;
+	    while(u === 0) u = Math.random(); //Converting [0,1) to (0,1)
+	    while(v === 0) v = Math.random();
+	    let num = Math.sqrt( -2.0 * Math.log( u ) ) * Math.cos( 2.0 * Math.PI * v );
+	    num = num / 10.0 + 0.5; // Translate to 0 -> 1
+	    if (num > 1 || num < 0) return randn_bm(); // resample between 0 and 1
+	    return num;
+	}
+
+	randomG(v){ 
+	    var r = 0;
+	    for(var i = v; i > 0; i --){
+	        r += Math.random();
+	    }
+	    return r / v;
+	}
+
+	interpolate(a, b, frac) // points A and B, frac between 0 and 1
+	{
+	    var nx = a.x+(b.x-a.x)*frac;
+	    var ny = a.y+(b.y-a.y)*frac;
+	    return new Vector(nx, ny);
+	}
+
+	dist(a, b) {
+		return Math.sqrt(Math.pow(a.x-b.x, 2) + Math.pow(a.y-b.y, 2));
+	}
+
+	planetDist(rocket, planet) {
+		return dist(rocket.pos, planet.pos) - rocket.height/2 - planet.radius;
+	}
+
+	round(value, decimalPlace) {
+		var decimalPlace = (decimalPlace === undefined) ? 0 : decimalPlace;
+		return Math.round( value * (10 ** decimalPlace)) / (10 ** decimalPlace)
+	}
+
+	getRandomColor() {
+	  var letters = '0123456789ABCDEF';
+	  var color = '#';
+	  for (var i = 0; i < 6; i++) {
+	    color += letters[Math.floor(Math.random() * 16)];
+	  }
+	  return color;
+	}
+
+	// Collision detection helper
+	circleCollidesRect(circle, rect) {
+		
+		var rectCenterX = rect.pos.x;
+		var rectCenterY = rect.pos.y;
+
+		var rectX = rectCenterX - rect.width / 2;
+		var rectY = rectCenterY - rect.height / 2;
+
+		var rectReferenceX = rectX;
+		var rectReferenceY = rectY;
+		
+		// Rotate circle's center point back
+		var unrotatedCircleX = Math.cos( rect.angle ) * ( circle.pos.x - rectCenterX ) - Math.sin( rect.angle ) * ( circle.pos.y - rectCenterY ) + rectCenterX;
+		var unrotatedCircleY = Math.sin( rect.angle ) * ( circle.pos.x - rectCenterX ) + Math.cos( rect.angle ) * ( circle.pos.y - rectCenterY ) + rectCenterY;
+
+		// Closest point in the rectangle to the center of circle rotated backwards(unrotated)
+		var closestX, closestY;
+
+		// Find the unrotated closest x point from center of unrotated circle
+		if ( unrotatedCircleX < rectReferenceX ) {
+			closestX = rectReferenceX;
+		} else if ( unrotatedCircleX > rectReferenceX + rect.width ) {
+			closestX = rectReferenceX + rect.width;
+		} else {
+			closestX = unrotatedCircleX;
+		}
+	 
+		// Find the unrotated closest y point from center of unrotated circle
+		if ( unrotatedCircleY < rectReferenceY ) {
+			closestY = rectReferenceY;
+		} else if ( unrotatedCircleY > rectReferenceY + rect.height ) {
+			closestY = rectReferenceY + rect.height;
+		} else {
+			closestY = unrotatedCircleY;
+		}
+	 
+		// Determine collision
+		var collision = false;
+		var distance = this.getDistance( unrotatedCircleX, unrotatedCircleY, closestX, closestY );
+		 
+		if ( distance < circle.radius ) {
+			collision = true;
+		}
+		else {
+			collision = false;
+		}
+
+		return collision;
+	}
+
+	getDistance( fromX, fromY, toX, toY ) {
+	    let diffX, diffY;
+	    if (fromX instanceof Vector || fromX.x) {
+	        diffX = Math.abs( fromX.x - fromY.x );
+	        diffY = Math.abs( fromX.y - fromY.y );
+	    } else {
+	        diffX = Math.abs( fromX - toX );
+	        diffY = Math.abs( fromY - toY );
+	    }
+		
+
+		return Math.sqrt( ( diffX * diffX ) + ( diffY * diffY ) );
+	}
+
+	abbreviateNumber(value) {
+	    var newValue = value;
+	    if (value >= 1000) {
+	        var suffixes = ["", "k", "m", "b","t"];
+	        var suffixNum = Math.floor( (""+value).length/3 );
+	        var shortValue = '';
+	        for (var precision = 2; precision >= 1; precision--) {
+	            shortValue = parseFloat( (suffixNum != 0 ? (value / Math.pow(1000,suffixNum) ) : value).toPrecision(precision));
+	            var dotLessShortValue = (shortValue + '').replace(/[^a-zA-Z 0-9]+/g,'');
+	            if (dotLessShortValue.length <= 2) { break; }
+	        }
+	        if (shortValue % 1 != 0)  shortValue = shortValue.toFixed(1);
+	        newValue = shortValue+suffixes[suffixNum];
+	    }
+	    return newValue;
+	}
+
+	scale(num, in_min, in_max, out_min, out_max) {
+	  return (num - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
+	}
+
+	onArc(center, object, radius) {
+	    return new Vector(center.x + (radius * ((object.x - center.x) / (Math.sqrt(Math.pow(object.x - center.x, 2) + (Math.pow(object.y - center.y, 2)))))), 
+	                    center.y + (radius * ((object.y - center.y) / (Math.sqrt(Math.pow(object.x - center.x, 2) + (Math.pow(object.y - center.y, 2)))))))
+	}
+
+	inRadialView(center, object, rocket, radius) {
+	        object.x -= center.x;
+	        object.y -= center.y;
+	        rocket.x -= center.x;
+	        rocket.y -= center.y;
+	        let a = Math.pow((rocket.x - object.x), 2) + Math.pow((rocket.y - object.y), 2);
+	        let b = 2*(object.x*(rocket.x - object.x) + object.y*(rocket.y - object.y));
+	        let c = Math.pow(object.x, 2) + Math.pow(object.y, 2) - Math.pow(radius, 2);
+	        let disc = Math.pow(b,2) - 4*a*c;
+	        if(disc <= 0) 
+	            return false;
+	        let sqrtdisc = Math.sqrt(disc);
+	        let t1 = (-b + sqrtdisc)/(2*a);
+	        let t2 = (-b - sqrtdisc)/(2*a);
+	        if((0 < t1 && t1 < 1) || (0 < t2 && t2 < 1)) 
+	            return true;
+	        return false;
+	}
+
+	inScreen(pos, relative, r, rocketPos) {
+		var relative = relative || 1;
+		var pos = Vector.mult(pos, camera.zoom);
+		let radius = (r || 0) * camera.zoom;
+		var rocketPos = Vector.mult(rocketPos, camera.zoom / relative);
+
+		return pos.x > rocketPos.x - canvas.width/2 - radius && pos.x < rocketPos.x + canvas.width/2 + radius && pos.y > rocketPos.y - canvas.height/2 - radius && pos.y < rocketPos.y + canvas.height/2 + radius;
+	}
+
+	// Get screen pos
+	getScreenPos(world, zoom, camera) {
+		return new Vector(
+			world.x*zoom - camera.x*zoom + canvas.width/2, 
+			world.y*zoom - camera.y*zoom + canvas.height/2);
+	}
+
+	shadeColor(color, percent) {
+	    var R = parseInt(color.substring(1,3),16);
+	    var G = parseInt(color.substring(3,5),16);
+	    var B = parseInt(color.substring(5,7),16);
+	    R = parseInt(R * (100 + percent) / 100);
+	    G = parseInt(G * (100 + percent) / 100);
+	    B = parseInt(B * (100 + percent) / 100);
+	    R = (R<255)?R:255;  
+	    G = (G<255)?G:255;  
+	    B = (B<255)?B:255;  
+	    var RR = ((R.toString(16).length==1)?"0"+R.toString(16):R.toString(16));
+	    var GG = ((G.toString(16).length==1)?"0"+G.toString(16):G.toString(16));
+	    var BB = ((B.toString(16).length==1)?"0"+B.toString(16):B.toString(16));
+    	return "#"+RR+GG+BB;
+	}
+
+
+	// Cookie functions for storing and getting data
+	setCookie(cname,cvalue,exdays) {
+	    var d = new Date(); 
+	    d.setTime(d.getTime() + (exdays*1000*60*60*24));
+	    var expires = "expires=" + d.toGMTString(); 
+	    window.document.cookie = cname+"="+cvalue+"; "+expires;
+	}
+
+	getCookie(cname) {
+	    var name = cname + "=";
+	    var cArr = window.document.cookie.split(';');
+	    for(var i=0; i<cArr.length; i++) {
+	        var c = cArr[i].trim();
+	        if (c.indexOf(name) == 0) 
+	            return c.substring(name.length, c.length);
+	    }
+	    return "";
+	}
+
+	deleteCookie(cname) {
+	    var d = new Date();
+	    d.setTime(d.getTime() - (1000*60*60*24));
+	    var expires = "expires=" + d.toGMTString();
+	    window.document.cookie = cname+"="+"; "+expires;
+	}
+
+	checkCookie() {
+	    var vistor=getCookie("vistorname");
+	    if (vistor != "") {
+	        var welcome_msg = window.document.getElementById('welcome-msg');
+	        welcome_msg.innerHTML="Welcome "+vistor;
+	    } else {
+	       vistor = prompt("What is your name?","");
+	       if (vistor != "" && vistor != null) {
+	           setCookie("vistorname", vistor, 30);
+	       }
+	    }
+	}
+
+	updateCookie(cname, cvalue) {
+
+	    if(getCookie(cname) == "") {
+	        console.log('Created cookie with value: ' + JSON.stringify(cvalue))
+	        let exdays = 365;
+	        setCookie(cname,cvalue,exdays);
+	    }
+	    if(JSON.stringify(cvalue) != getCookie(cname)) {
+	        deleteCookie(cname);
+	        let exdays = 365;
+	        setCookie(cname,cvalue,exdays);
+	    }
+	}
+
+	dragElement(elmnt) {
+		var pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
+		if (document.getElementById(elmnt.id + "header")) {
+		// if present, the header is where you move the DIV from:
+			document.getElementById(elmnt.id + "header").onmousedown = dragMouseDown;
+		} else {
+		// otherwise, move the DIV from anywhere inside the DIV:
+			elmnt.onmousedown = dragMouseDown;
+		}
+
+		function dragMouseDown(e) {
+			e = e || window.event;
+			e.preventDefault();
+			// get the mouse cursor position at startup:
+			pos3 = e.clientX;
+			pos4 = e.clientY;
+			document.onmouseup = closeDragElement;
+			// call a function whenever the cursor moves:
+			document.onmousemove = elementDrag;
+		}
+
+		function elementDrag(e) {
+		    e = e || window.event;
+		    e.preventDefault();
+		    // calculate the new cursor position:
+		    pos1 = pos3 - e.clientX;
+		    pos2 = pos4 - e.clientY;
+		    pos3 = e.clientX;
+		    pos4 = e.clientY;
+		    // set the element's new position:
+		    elmnt.style.top = (elmnt.offsetTop - pos2) + "px";
+		    elmnt.style.left = (elmnt.offsetLeft - pos1) + "px";
+		}
+
+		function closeDragElement() {
+		    // stop moving when mouse button is released:
+		    document.onmouseup = null;
+		    document.onmousemove = null;
+		}
 	}
 }
+
+
+
+export let util = new Util();

@@ -5,8 +5,9 @@ This file gets the raw user input.
 */
 
 import Vector from "../util/Vector.js";
-
+import {game} from "./Game.js";
 export let input = {};
+import {camera} from "../visuals/Camera.js";
 
 // Keyboard events
 input.keys = {};
@@ -43,15 +44,14 @@ $("#game-canvas").on('mousedown', function (e) {
 })
 
 // Scroll event
-
 var scrollSpeed = 0.01;
 $(window).bind('mousewheel', function(event) {
-	if (document.readyState != "complete" || display.state != "play")
+	if (document.readyState != "complete" || game.state != "play")
 		return;
 
 	if (event.originalEvent.wheelDelta >= 0) {
-        display.zoom = Math.min(display.zoom+delta/100, display.maxZoom);
+        camera.zoom = Math.min(camera.zoom+delta/100, camera.maxZoom);
     } else if (event.originalEvent.wheelDelta <= 0) {
-        display.zoom = Math.max(display.zoom-delta/100, display.minZoom);
+        camera.zoom = Math.max(camera.zoom-delta/100, camera.minZoom);
     }
 });
