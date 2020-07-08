@@ -21,6 +21,8 @@ export default class Rocket {
 		this.vel = new Vector();
 		this.acc = new Vector();
 
+		this.xp = 0;
+
 		this.speed = 0;
 
 		// Orientation data
@@ -44,7 +46,7 @@ export default class Rocket {
 		this.alive = true;
 
 		// Missiles
-		this.shootDelay = 100;
+		this.shootDelay = 200;
 		this.shootTime = Date.now();
 		this.newMissiles = [];
 
@@ -72,6 +74,7 @@ export default class Rocket {
 		}
 
 		this.mortalCourse = false;
+		this.deathTick = Date.now();
 	}
 
 	setConfig(cfg) {
@@ -83,19 +86,19 @@ export default class Rocket {
 		this.radius = cfg.radius || 50;
 
 		// Speed
-		this.maxSpeed = cfg.maxSpeed || Infinity;
+		this.maxSpeed = cfg.maxSpeed || 800;
 		this.landingSpeed = cfg.landingSpeed || 600;
 
 		// Mass
 		this.mass = cfg.mass || 100;
 
 		// Thrust
-		this.maxThrust = cfg.maxThrust || 1000;
+		this.maxThrust = cfg.maxThrust || 700;
 		this.thrustSpeed = cfg.thrustSpeed || this.maxThrust/100;
 		this.steerSpeed = cfg.steerSpeed || 3;
 
 		// Fuel
-		this.maxFuel = cfg.maxFuel || 200000;
+		this.maxFuel = cfg.maxFuel || 100000;
 		this.fuel = this.maxFuel;
 		this.fuelConsumption = cfg.fuelConsumption || 5;
 
@@ -153,9 +156,7 @@ export default class Rocket {
 		if (this.fuel > 0 && this.alive && this.integrity > 0) {
 			// Thrust
 			if (keys[38] || keys[87] || keys[32]) {
-				this.thrust = Math.min(this.maxThrust, this.thrust + this.thrustSpeed * delta / 16);
-			} else if(keys[33]) { // Instant thrust? page down
-				this.thrust = 500;
+				this.thrust = this.maxThrust;//Math.min(this.maxThrust, this.thrust + this.thrustSpeed * delta / 16);
 			} else {
 				this.thrust = 0;
 			}
@@ -183,7 +184,7 @@ export default class Rocket {
 				acc: new Vector(),
 				heading: playerHeading,
 				angle: playerAngle,
-				speed: 1,
+				speed: 1.5,
 				time: Date.now(),
 				id: socket.id,
 				origin: "player",
@@ -233,6 +234,7 @@ export default class Rocket {
 
 		if (!this.onPlanet) {
 			this.angle += this.steer * this.steerSpeed / Math.PI * delta / 300;
+			this.angle = this.angle % (2 * Math.PI)
 		}
 
 		// Get direction of rocket
@@ -249,6 +251,8 @@ export default class Rocket {
 
 		// The force is with you
 		this.gForce = gravForce.getMag()/433;
+		if (this.gForce == NaN)
+			this.gForce = 0;
 		let netForce = thrustForce.copy();
 		netForce.add(gravForce);
 		this.acc = netForce.copy();
@@ -260,6 +264,10 @@ export default class Rocket {
 		if (this.speed > this.maxSpeed) { // Constrain to max speed
 			this.vel.normalize();
 			this.vel.mult(this.maxSpeed);
+		}
+
+		if (this.closestPlanetDistance < 200) { // Add air resistance
+			this.vel.setMag(this.vel.getMag() - delta/50)
 		}
 
 		// New position
@@ -275,12 +283,21 @@ export default class Rocket {
 		let newFuel = this.fuel - (Math.abs(this.thrust) + Math.abs(this.steer)*200) * delta / 1000 * this.fuelConsumption;
 		this.fuel = util.constrain(newFuel, 0, this.maxFuel);
 
+		// Update integrity
+		if (this.alive && this.pos.getMag() > game.map.mapRadius && Date.now()-this.deathTick > 250) {
+			this.deathTick = Date.now();
+			this.integrity -= 1;
+			vfx.add(this.pos, "damage", {size: 20, alpha: 1, duration: 1000, text: -1, color: "red"})
+		}
+
+		// Check for death conditions
 		if (this.fuel <= 0) {
 			if(this.alive) {
 				game.sendLog("fuel");
 			}
 			this.alive = false;
 			this.thrust = 0;
+
 		}
 
 		if (this.integrity <= 0) {
@@ -315,7 +332,9 @@ export default class Rocket {
 			// Resolve collision
 			let displacement = Vector.sub(this.pos, p.pos);
 			let angle = Math.atan2(displacement.y, displacement.x);
-			let angleDiff = (angle - (this.angle-Math.PI/2))%(Math.PI*2);
+			let x = angle;
+			let y = (this.angle-Math.PI/2);
+			let angleDiff = Math.atan2(Math.sin(x-y), Math.cos(x-y));
 			this.goodLanding = Math.abs(angleDiff) < 0.5 || Math.abs(2*Math.PI-angleDiff) < 0.5;
 
 			this.pos = this.prevPos.copy(); // Set position as one from previous frame
@@ -335,15 +354,41 @@ export default class Rocket {
 				if (this.alive) {
 					game.sendLog("crash");
 					vfx.add(this.pos, "explosion", {size: 100, alpha: 1, duration: 200})
-					vfx.add(this.pos, "damage", {size: 30, alpha: 1, duration: 1000, text: -this.integrity, color: "red"})
+					vfx.add(this.pos, "damage", {size: 30, alpha: 1, duration: 1000, text: -Math.round(this.integrity), color: "red"})
 				}
 				this.alive = false;
 			} else {
 				// Perfect landing or Good landing
 				this.fuel = util.constrain(this.fuel + delta * 10, 0, this.maxFuel);
+				this.integrity = util.constrain(this.integrity + delta / 1000, 0, this.maxIntegrity);
+
 				this.angle = angle+Math.PI/2;
 				this.steer = 0;
 				this.onPlanet = true;
+			}
+		}
+
+		// Auto steer to land the rocket
+		let p = this.closestPlanet;
+		if (p) {
+			let inVicinity = util.getDistance(this.pos, p.pos) < p.radius + 300;
+
+			if (inVicinity) {
+				// Auto rotate rocket
+				let displacement = Vector.sub(this.pos, p.pos);
+				let angle = Math.atan2(displacement.y, displacement.x);
+				let x = angle;
+				let y = (this.angle-Math.PI/2);
+				let angleDiff = Math.atan2(Math.sin(x-y), Math.cos(x-y));
+
+				let velAngle = Math.atan2(this.vel.y, this.vel.x)-Math.PI/2;
+				let velDiff = Math.atan2(Math.sin(angle-velAngle), Math.cos(angle-velAngle));
+
+				// Check if user is not manually controlling the rocket, the angle difference is greater than normal, and if the rocket is heading towards the planet
+				if (this.steer == 0 && Math.abs(angleDiff) > 0.1 && velDiff < 0 && this.thrust == 0) {
+					this.angle += Math.sign(angleDiff) * this.steerSpeed / Math.PI * delta / 300;
+					this.angle = this.angle % (2 * Math.PI)
+				}
 			}
 		}
 
@@ -367,26 +412,22 @@ export default class Rocket {
         }  	
 	}
 
-	respawn() {
+	respawn(inSpace) {
 
 		if (!game.map)
 			return;
 
 		camera.zoom = camera.minZoom;
 
-		// Spawn on Earth
-		let spawnVector = Vector.rotate(new Vector(0, -200), util.random(0, Math.PI*2));
-		this.pos = new Vector(spawnVector.x, 200+spawnVector.y);
-		this.angle = Math.atan2(spawnVector.y, spawnVector.x)+Math.PI/2;
-		/*// Spawn in a random location
-		this.angle = random(0, Math.PI*2);
+		// Spawn in a random location
+		this.angle = util.random(0, Math.PI*2);
 		let notSpawned = true;
 		while (notSpawned) {
-			this.pos = randCircle(2000);
+			this.pos = util.randCircle(2000);
 			let collidedWithAnything = false;
 			for (let id in game.map.planets) {
 				let p = game.map.planets[id]
-				if(circleCollidesRect(p, this)) {
+				if(util.circleCollidesRect(p, this)) {
 					collidedWithAnything = true;
 				}
 			}
@@ -394,7 +435,7 @@ export default class Rocket {
 			if (!collidedWithAnything) {
 				notSpawned = false;
 			}
-		}*/
+		}
 
 		// Update rocket 
 		this.vel = new Vector();

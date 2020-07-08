@@ -19,10 +19,17 @@ class Camera {
 		this.mapZ = 0.00001;
 		this.warp = false;
 
+		this.follow = true;
+		this.toggle = false;
+
 	}
 
 	update() {
-		this.pos = Vector.add(game.rocket.pos, this.offset);
+		if(this.follow) {
+			this.pos = Vector.add(game.rocket.pos, this.offset);
+		} else {
+			this.pos = this.offset.copy();
+		}
 
 		let keys = input.keys;
 
@@ -37,10 +44,28 @@ class Camera {
 				direction.y -= 1;
 		if(keys[36])
 			this.offset = new Vector();
+		if(keys[35]) {
+			if(!this.toggle) {
+				if(this.follow) {
+					this.offset = this.pos.copy();
+					
+				} else {
+					this.offset = Vector.sub(this.pos.copy(), game.rocket.pos.copy());
+					this.pos = Vector.add(game.rocket.pos, this.offset);;
+
+				}
+				this.toggle = true;
+				this.follow = !this.follow;
+			}
+		} else {
+			if (this.toggle) {
+				this.toggle = false;
+			}
+		}
 
 		// Apply direction
 		direction.normalize();
-		direction.mult(3*delta);
+		direction.mult(1*delta);
 		this.offset.x += direction.x;
 		this.offset.y -= direction.y;
 	}

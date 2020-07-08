@@ -79,7 +79,7 @@ export default class Minimap {
 			let p = game.radar.planets[id];
 			// Draw on the minimap
 			style.drawCircle(manvas.width/2 + (p.pos.x - rocket.pos.x) / this.scale, manvas.height/2 + (p.pos.y - rocket.pos.y) / this.scale, p.radius / this.scale, p.color);
-			if (p.type == "Black Hole") {
+			if (p.type == "blackhole") {
 				style.drawText("!", manvas.width/2 + (p.pos.x - rocket.pos.x) / this.scale, manvas.height/2 + (p.pos.y - rocket.pos.y) / this.scale, "Bold 25px Arial", "red", "center", "middle", 1);
 			}
 		}

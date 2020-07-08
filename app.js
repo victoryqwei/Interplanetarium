@@ -82,12 +82,6 @@ io.on('connection', function(socket) {
 			rooms[roomId].receiveLog(data, socket.id);
 	})
 
-	// New level
-	socket.on('newLevel', (data) => {
-		if (roomId)
-			rooms[roomId].nextStage(socket.id);
-	})
-
 	// Disconnect
 	socket.on("disconnect", () => {
 		socket.leave(roomId, () => {

@@ -163,13 +163,14 @@ export default class Style {
 			ctx.fill();
 		ctx.globalAlpha = 1;
 	}
-
+	
 	drawRotatedRoundedRect(x, y, w, h, r, c, d, options) {
 		let {ctx} = this;
 
 		if (!options)
 			options = {};
 
+		ctx.save();
 		ctx.translate(x, y);
 		ctx.rotate(d);
 		
@@ -191,8 +192,9 @@ export default class Style {
 
 		ctx.closePath();
 		ctx.resetTransform();
+		ctx.restore();
 	}
-
+	
 	drawStar(cx, cy, spikes, outerRadius, innerRadius) {
 		let {ctx} = this;
 

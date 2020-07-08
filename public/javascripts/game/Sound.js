@@ -31,7 +31,7 @@ export default class Sound {
 		let {wavesurfer, segments} = this;
 
 		// Load music
-		wavesurfer.load('./sounds/music.wav');
+		//wavesurfer.load('./sounds/music.wav');
 
 		// On music loaded
 		wavesurfer.on('ready', function () {

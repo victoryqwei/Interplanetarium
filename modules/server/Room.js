@@ -21,36 +21,59 @@ module.exports = class Room {
 		this.io = io;
 
 		// Players
-
 		this.players = {};
 
 		// Map
-
 		this.stages = [];
 
+		let t = Date.now();
 		for (let i = 0; i < 10; i++) {
 			this.stages.push(new Map(i));
 		}
+		console.log("Successfully built server maps in", Date.now()-t, "ms");
 
 		// Log
-
 		this.newLog = [];
 	}
 
 	update(io) {
-		// Update stages
-		for (let level of this.stages) {
-			level.update(this.getPlayers(level.stage));
-		}
+		this.updatePlayers();
+		this.updateMap();
 
 		// Send data to clients
 		this.sendData(io);
 	}
 
+	// Update map
+	updateMap() {
+		// Update stages
+		for (let level of this.stages) {
+			level.update(this.getPlayers(level.stage));
+		}
+	}
+
+	// Update players in each stage
+	updatePlayers() {
+		for (let id in this.players) {
+			let p = this.players[id];
+			if (!p.rocket)
+				 continue;
+
+			let stageXp = p.stage*100+100;
+			if (p.rocket && p.rocket.xp >= stageXp) {
+				this.nextStage(id);
+			}
+		}
+	}
+
 	// Create new level
 	nextStage(playerId) {
 		// Update client level data
+		if (this.players[playerId].stage + 1 > 9)
+			return;
+
 		this.players[playerId].stage += 1;
+		console.log(this.players[playerId].name, "has moved to stage", this.players[playerId].stage + 1)
 		this.io.to(playerId).emit("levelData", this.stages[this.players[playerId].stage]);
 
 		for (let id in this.players) {
@@ -150,7 +173,8 @@ module.exports = class Room {
 			let map = {
 				planets: {},
 				missiles: stage.newMissiles,
-				effects: stage.newEffects
+				effects: stage.newEffects,
+				experience: stage.newXP
 			}
 
 			// Get planets in viewing range
@@ -180,6 +204,7 @@ module.exports = class Room {
 			this.newLog = [];
 			stage.newMissiles = [];
 			stage.newEffects = [];
+			stage.newXP = [];
 		}
 	}
 }

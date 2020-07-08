@@ -46,6 +46,7 @@ class Game {
 		this.rocket.update();
 		this.sound.music();
 		camera.update();
+
 	}
 
 	start() { // Starts the game - This officially starts the game process
@@ -64,7 +65,8 @@ class Game {
 					angle: rocket.angle,
 					integrity: rocket.integrity,
 					thrust: rocket.thrust,
-					alive: rocket.alive
+					alive: rocket.alive,
+					xp: rocket.xp
 				},
 				missiles: rocket.newMissiles,
 				effects: vfx.newEffects,
@@ -135,10 +137,21 @@ class Game {
 	}
 
 	receiveMapData(map) {
+		// Create map quadtree
+		this.mapQ = new QuadTree(new Rectangle(0, 0, this.map.mapRadius, this.map.mapRadius), 4)
+
+		for (let id in map.planets) {
+			let p = map.planets[id];
+
+			var point = new Point(p.pos.x, p.pos.y, p.radius, map.planets[id]);
+			this.mapQ.insert(point);
+		}
+
 		// Update planets
 		for (let id in map.planets) {
 			let p = map.planets[id]
 			this.map.planets[id] = p;
+
 			var point = new Point(p.pos.x, p.pos.y, p.radius, p);
 			this.mapQ.insert(point);
 		}
@@ -158,12 +171,21 @@ class Game {
 		for (let e of map.effects) {
 			vfx.add(e.pos, e.type, e.options, true);
 		}
+
+		// Update player experience
+		for (let e of map.experience) {
+			if (e.id == socket.id) {
+				this.rocket.xp += e.xp;
+			}
+		}
 	}
 
 	receiveLevelData(data) {
 		this.players = {};
 
 		this.map = data;
+
+		this.rocket.xp = 0;
 
 		// Create map quadtree
 		this.mapQ = new QuadTree(new Rectangle(0, 0, this.map.mapRadius, this.map.mapRadius), 4)
@@ -183,6 +205,7 @@ class Game {
 		camera.warp = true;
 		camera.mapZ = 0.00001;
 
+		this.rocket.respawn(true);
 	}
 
 	receiveLogData(data) {
@@ -193,6 +216,7 @@ class Game {
 				game.log.splice(0, 1);
 			}, 5000)
 		}
+		
 	}
 
 	sendLog(type) {		

@@ -9,13 +9,15 @@ module.exports = class Base {
 		this.heading = spawnVector.normalize();
 		this.angle = angle;
 
-		this.radius = 100;
 
-		this.health = 20;
 		this.id = planet.id;
 		this.baseId = id;
 
 		this.level = level;
+
+
+		this.radius = level*20;
+		this.health = level*40;
 	}
 
 	update(players, planet) {

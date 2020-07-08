@@ -21,7 +21,6 @@ export default class UI {
 		this.padding = 20;
 		this.minimap = new Minimap();
 		this.dashboard = new Dashboard();
-
 	}
 
 	draw() {
@@ -32,7 +31,6 @@ export default class UI {
 		this.drawLog();
 		if(!game.rocket.alive) {
 			this.drawDeath();
-
 		}
 	}
 
@@ -42,22 +40,14 @@ export default class UI {
 
 		let zoom = camera.zoom;
 
-		if(game.screen && !camera.warp) {
+		if (game.screen && !camera.warp) {
 			for (let id in game.screen.planets) {
 				let p = game.screen.planets[id];
-				if(p.type == "Black Hole")
+				if(p.type == "blackhole")
 					break;
 				let planet = util.getScreenPos(p.pos, zoom, camera.pos);
-	
-				ctx.font = p.radius/4*zoom + "px Arial";
-				var amount = Math.round(100 * p.resource.amount/p.resource.totalAmount);
-				let width = ctx.measureText(amount).width
-				let planetText = ctx.measureText(p.name).width
-
 				// Draw planet name
-				style.drawText(p.name, planet.x, planet.y - 40*zoom, p.radius/4*zoom + "px Arial", "white", "center", "middle", 1);
-				style.drawText(Math.round(100 * p.resource.amount/p.resource.totalAmount), planet.x, planet.y + 25*zoom, p.radius/4*zoom + "px Arial", "white", "center", "middle", 1);
-				style.drawText("%", planet.x + width/2, planet.y + 20*zoom + 15*zoom, 20*zoom + "px Arial", "white", "left", "middle", 1);
+				style.drawText(p.name, planet.x, planet.y, p.radius/4*zoom + "px Arial", "white", "center", "middle", 1);
 			}
 		}
 	}
@@ -83,7 +73,7 @@ export default class UI {
 			style.drawWarning(canvas.width/2, canvas.height/4, 110, 100, 0, "red", 0.5);
 			style.drawText("WARNING", canvas.width/2, canvas.height/4 + 100, "bold 50px Arial", "red", "center", "middle", 0.8);
 			style.drawText("Rocket Collision Imminent", canvas.width/2, canvas.height/4 + 150, "bold 30px Arial", "white", "center", "middle", 0.8);
-			style.drawText("Distance: " + Math.round(rocket.mortalCourse) + " km", canvas.width/2, canvas.height/4 + 200, "bold 20px Arial", "white", "center", "middle", 0.8);
+			style.drawText("Distance: " + Math.round(rocket.mortalCourse) + " km", canvas.width/2, canvas.height/4 + 180, "bold 20px Arial", "white", "center", "middle", 0.8);
 		}
 	}
 

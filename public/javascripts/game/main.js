@@ -9,11 +9,17 @@ import Animate from '../visuals/Animate.js'
 import UI from '../ui/Interface.js'
 import {game} from "./Game.js";
 import {camera} from "../visuals/Camera.js";
+import {util} from "../util/Util.js";
 
 (function () {
 	// Initialize classes
 	var animate = new Animate();
 	var ui = new UI();
+
+	//Update username
+	if(util.getCookie('userName') != "") {
+   		$("#username").val(JSON.parse(util.getCookie('userName')));
+	}
 
 	// Update loop
 	function update() {

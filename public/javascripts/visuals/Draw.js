@@ -85,7 +85,7 @@ class Draw {
 
         ctx.restore();
         
-        if(/*serverRocket && */!camera.warp)
+        if (serverRocket && !camera.warp)
         	style.drawText(name, pos.x, pos.y - height*1.2, 20+ "px Arial", "white", "center", "middle", 1);
     
 	}
@@ -175,6 +175,9 @@ class Draw {
 
 	drawPlanet(pos, radius, type, config) {
 
+		if (!config.color)
+			return;
+
 		let {style} = this;
 
 		let zoom = camera.warp ? camera.mapZ : camera.zoom;
@@ -183,7 +186,7 @@ class Draw {
 		let options = {
 			outline: true,
 			outlineWidth: 10*zoom,
-			outlineColor: config.strokeColor || util.shadeColor(config.color, -20), 
+			outlineColor: util.shadeColor(config.color, -20),
 			glow: true,
 			glowColor: config.color,
 			glowWidth: 100*zoom
@@ -197,9 +200,9 @@ class Draw {
 		var screenPos = util.getScreenPos(pos, zoom, camera.pos);
 
 		// Draw Planet
-		if(type == "Planet") {
-			style.drawCircle(screenPos.x, screenPos.y, radius*zoom, config.color, options);
-		} else if(type == "Black Hole") {
+		if (type == "planet") {
+			style.drawCircle(screenPos.x, screenPos.y, (radius - 5)*zoom, config.color, options);
+		} else if(type == "blackhole") {
 			style.drawCircle(screenPos.x, screenPos.y, radius*zoom, config.color, options);
 		}
 		ctx.restore();
@@ -228,6 +231,27 @@ class Draw {
 		}
 	}
 
+	drawBase(planet) {
+
+		let {style} = this;
+
+		let zoom = camera.warp ? camera.mapZ : camera.zoom;
+		// Draw turrets
+		for (let id in planet.bases) {
+			let b = planet.bases[id];
+			if (util.inScreen(b.pos, false, 100*zoom, camera.pos)) {
+				var screenPos = util.getScreenPos(b.pos, zoom, camera.pos);
+
+				if(b.level == 1)
+					style.drawImage(images.baseLevel1, screenPos.x, screenPos.y, 40*zoom, 30*zoom, b.angle + Math.PI/2)
+				if(b.level == 2)
+					style.drawImage(images.baseLevel2, screenPos.x, screenPos.y, 40*zoom, 40*zoom, b.angle + Math.PI/2)
+				if(b.level == 3)
+					style.drawImage(images.baseLevel3, screenPos.x, screenPos.y, 40*zoom, 60*zoom, b.angle + Math.PI/2)
+			}
+		}
+	}
+
 	drawWarp(starQ) {
 
 		let {style} = this;
@@ -240,7 +264,7 @@ class Draw {
 
 		for (let id in game.screen.planets) {
 			let p = game.screen.planets[id];
-			if (p.type == "Black Hole") {
+			if (p.type == "blackhole") {
 				// Screen position of planet
 				let planetScreen = util.getScreenPos(p.pos, zoom, game.rocket.pos);
 

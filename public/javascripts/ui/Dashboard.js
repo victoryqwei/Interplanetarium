@@ -31,11 +31,18 @@ export default class Dashboard {
 
 		this.spacing = 75;
 		this.padding = 22;
+
+		this.xp = 0;
+		this.prevXp = 0;
+		this.xpDelay = 0;
+		this.xpDelta = 0;
+		this.fullXp = false;
+
 	}
 
 	draw() {
-		
-		if (!game.map || game.state != "play" || camera.warp)
+
+		if (!game.map)
 			return;
 
 		// Define
@@ -50,48 +57,83 @@ export default class Dashboard {
 			alpha: 0.1
 		})
 
-		// Draw integrity
-		style.drawText("INTEGRITY", hanvas.width/2, hanvas.height/3, "18px Arial", "#9e9e9e", "center", "middle", 1);
-		style.drawText(Math.max(Math.round(100 * rocket.integrity/rocket.maxIntegrity), 0), hanvas.width/2 - (ctx.measureText("%").width/2), hanvas.height/1.5, "45px Arial", "white", "center", "middle", 1)
-		style.drawText("%", hanvas.width/2 + ((htx.measureText(Math.max(Math.round(100 * rocket.integrity/rocket.maxIntegrity), 0)).width)/2) - (ctx.measureText("%").width/2), hanvas.height/1.5 + 8, "12px Arial", "white", "left", "middle", 1);
+		ctx.font = "12px Arial";
+		htx.font = "45px Arial";
 
-		// Draw fuel
-		style.drawText("FUEL", hanvas.width/2 - this.spacing*2, hanvas.height/3, "18px Arial", "#9e9e9e", "center", "middle", 1);
-		style.drawText(Math.round(100 * rocket.fuel/rocket.maxFuel), hanvas.width/2 - (ctx.measureText("kL").width/2) - this.spacing*2, hanvas.height/1.5, "45px Arial", "white", "center", "middle", 1)
-		style.drawText("kL", hanvas.width/2 - this.spacing*2 + ((htx.measureText(Math.round(100 * rocket.fuel/rocket.maxFuel)).width)/2) - (ctx.measureText("kL").width/2), hanvas.height/1.5 + 8, "12px Arial", "white", "left", "middle", 1);
+		// Draw stage differences
+		let leftText = "Stage " + (game.map.stage + 1);
+		style.drawText(leftText, hanvas.width/2 - 200, 8, "14px Arial", "white", "left", "top")
+		let leftTextWidth = htx.measureText(leftText).width + 5;
 
-		// Draw thrust
-		style.drawText("SPEED", hanvas.width/2 + this.spacing*2, hanvas.height/3, "18px Arial", "#9e9e9e", "center", "middle", 1);
-		style.drawText(Math.round(rocket.vel.getMag()), hanvas.width/2 - (ctx.measureText("kN").width/2) + this.spacing*2, hanvas.height/1.5, Math.round(rocket.thrust/10) == 100 ? "40px Arial" : "45px Arial", "white", "center", "middle", 1)
-		style.drawText("km/h", hanvas.width/2 + this.spacing*2 + ((htx.measureText(Math.round(rocket.vel.getMag())).width)/2) - (ctx.measureText("kN").width/2), hanvas.height/1.5 + 8, "12px Arial", "white", "left", "middle", 1);
+		let rightText = "Stage " + (game.map.stage + 2);
+		style.drawText(rightText, hanvas.width/2 + 200, 8, "14px Arial", "white", "right", "top")
+		let rightTextWidth = htx.measureText(rightText).width;
 
-		// Draw separation lines
-		style.drawLine(hanvas.width/2 - this.spacing, this.padding, hanvas.width/2 - this.spacing, hanvas.height - this.padding, "white", 1, "butt", 0.8);
-		style.drawLine(hanvas.width/2 + this.spacing, this.padding, hanvas.width/2 + this.spacing, hanvas.height - this.padding, "white", 1, "butt", 0.8);
+		// Animate XP bar
+		let xpHeight = 12;
+		let xpWidth = 400 - leftTextWidth - rightTextWidth - 10;
 
-		// Set circle options
-		let options = {
-			fill: true,
-			alpha: 0.5,
-			glow: false
+		let stageXp = game.map.stage*100+100;
+ 		let xpProgress = Math.min((game.rocket.xp/stageXp), 1);
+
+ 		if (game.rocket.xp == 0) {
+ 			this.xp = 0;
+ 		}
+ 		if (this.prevXp < game.rocket.xp) {
+ 			this.xp += xpWidth*xpProgress - xpWidth*(this.prevXp/stageXp);
+ 			this.xpDelta = this.xp;
+ 		}
+ 		this.prevXp = game.rocket.xp;
+ 		if (this.xp > 0) {
+ 			this.xp -= (0.05*Math.min(this.xpDelta/this.xp, 2))*delta;
+ 		}
+
+		if (xpProgress >= 1) { 
+			// Full XP Bar
+			style.drawRectangle(hanvas.width/2 - 200 + leftTextWidth, 8, xpWidth, xpHeight, "red", {alpha: 1});
+		} else {
+			style.drawRectangle(hanvas.width/2 - 200 + leftTextWidth, 8, xpWidth, xpHeight, "white", {alpha: 0.2});
+			style.drawRectangle(hanvas.width/2 - 200 + leftTextWidth, 8, xpWidth*xpProgress - this.xp, xpHeight, "white", {alpha: 0.8});
+			style.drawRectangle(hanvas.width/2 - 200 + xpWidth*xpProgress - this.xp + leftTextWidth, 8, this.xp, xpHeight, "green", {alpha: 1});
 		}
 
-		// Draw resource cirlces
-		style.drawCircle(hanvas.width/2 - this.spacing * 3.5, hanvas.height/2, (hanvas.height-this.padding*2)/2 + 3, "green", options)
-		style.drawCircle(hanvas.width/2 + this.spacing * 3.5, hanvas.height/2, (hanvas.height-this.padding*2)/2 + 3, "green", options)
-		style.drawCircle(hanvas.width/2 - this.spacing * 4.7, hanvas.height/2, (hanvas.height-this.padding*2)/2 + 3, "green", options)
-		style.drawCircle(hanvas.width/2 + this.spacing * 4.7, hanvas.height/2, (hanvas.height-this.padding*2)/2 + 3, "green", options)
+		if (xpProgress >= 1 && !this.fullXp) {
+			this.fullXp = true;
 
-		// Draw resource names
-		style.drawText("Copper", hanvas.width/2 - this.spacing * 3.5, hanvas.height/2.6, "bold 14px Arial", "#9e9e9e", "center", "middle", 1);
-		style.drawText("Iron", hanvas.width/2 + this.spacing * 3.5, hanvas.height/2.6, "bold 14px Arial", "#9e9e9e", "center", "middle", 1);
-		style.drawText("Lead", hanvas.width/2 - this.spacing * 4.7, hanvas.height/2.6, "bold 14px Arial", "#9e9e9e", "center", "middle", 1);
-		style.drawText("Kanium", hanvas.width/2 + this.spacing * 4.7, hanvas.height/2.6, "bold 14px Arial", "#9e9e9e", "center", "middle", 1);
+			// Draw launch button
 
-		// Draw checkmarks
-		style.drawCheckmark(hanvas.width/2 - this.spacing * 3.5 - 2, hanvas.height/1.75, 8, 3)
-		style.drawCheckmark(hanvas.width/2 + this.spacing * 3.5 - 2, hanvas.height/1.75, 8, 3)
-		style.drawCheckmark(hanvas.width/2 - this.spacing * 4.7 - 2, hanvas.height/1.75, 8, 3)
-		style.drawCheckmark(hanvas.width/2 + this.spacing * 4.7 - 2, hanvas.height/1.75, 8, 3)
+			/*$("#interface-container").animate({height:'150px'}, {
+				duration: 500,
+				step: function (diff) {
+					hanvas.height = ;
+				}
+			});*/
+		}
+
+		// Animate VITALS
+		let vitalHeight = 100;
+		let heightDiff = hanvas.height - vitalHeight;
+
+		// Draw integrity
+		let integrityValue = Math.max(Math.round(100 * rocket.integrity/rocket.maxIntegrity), 0);
+		style.drawText("INTEGRITY", hanvas.width/2, vitalHeight/2.8 + heightDiff, "18px Arial", "#9e9e9e", "center", "middle", 1);
+		style.drawText(integrityValue, hanvas.width/2 - (ctx.measureText("%").width/2), vitalHeight/1.4 + heightDiff, "45px Arial", "white", "center", "middle", 1)
+		style.drawText("%", hanvas.width/2 + ((htx.measureText(Math.max(Math.round(100 * rocket.integrity/rocket.maxIntegrity), 0)).width)/2) - (ctx.measureText("%").width/2), vitalHeight/1.8 + 8 + heightDiff, "12px Arial", "white", "left", "middle", 1);
+
+		// Draw fuel
+		let fuelValue = Math.round(100 * rocket.fuel/rocket.maxFuel);
+		style.drawText("FUEL", hanvas.width/2 - this.spacing*2, vitalHeight/2.8 + heightDiff, "18px Arial", "#9e9e9e", "center", "middle", 1);
+		style.drawText(fuelValue, hanvas.width/2 - (ctx.measureText("kL").width/2) - this.spacing*2, vitalHeight/1.4 + heightDiff, "45px Arial", "white", "center", "middle", 1)
+		style.drawText("kL", hanvas.width/2 - this.spacing*2 + ((htx.measureText(Math.round(100 * rocket.fuel/rocket.maxFuel)).width)/2) - (ctx.measureText("kL").width/2), vitalHeight/1.8 + 8 + heightDiff, "12px Arial", "white", "left", "middle", 1);
+
+		// Draw thrust
+		let speedValue = Math.round(rocket.vel.getMag());
+		style.drawText("SPEED", hanvas.width/2 + this.spacing*2, vitalHeight/2.8 + heightDiff, "18px Arial", "#9e9e9e", "center", "middle", 1);
+		style.drawText(speedValue, hanvas.width/2 - (ctx.measureText("kN").width/2) + this.spacing*2, vitalHeight/1.4 + heightDiff, Math.round(rocket.thrust/10) == 100 ? "40px Arial" : "45px Arial", "white", "center", "middle", 1)
+		style.drawText("km/h", hanvas.width/2 + this.spacing*2 + ((htx.measureText(Math.round(rocket.vel.getMag())).width)/2) - (ctx.measureText("kN").width/2), vitalHeight/1.8 + 8 + heightDiff, "12px Arial", "white", "left", "middle", 1);
+
+		// Draw separation lines
+		style.drawLine(hanvas.width/2 - this.spacing, this.padding + 15/2 + heightDiff, hanvas.width/2 - this.spacing, vitalHeight - this.padding + 15/2 + heightDiff, "white", 1, "butt", 0.8);
+		style.drawLine(hanvas.width/2 + this.spacing, this.padding + 15/2 + heightDiff, hanvas.width/2 + this.spacing, vitalHeight - this.padding + 15/2 + heightDiff, "white", 1, "butt", 0.8);
 	}
 }

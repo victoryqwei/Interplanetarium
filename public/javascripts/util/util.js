@@ -344,6 +344,9 @@ class Util {
 
 		function dragMouseDown(e) {
 			e = e || window.event;
+			if (e.which != 3)
+				return;
+
 			e.preventDefault();
 			// get the mouse cursor position at startup:
 			pos3 = e.clientX;

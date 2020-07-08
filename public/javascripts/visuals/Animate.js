@@ -28,6 +28,9 @@ export default class Animate {
 		if (game.state == "play") {
 			this.animateMissiles();
 			this.animatePlanets();
+		}
+		this.animateBorder();
+		if (game.state == "play") {
 			this.animateRocket();
 			this.animatePlayers();
 			this.animateVfx();
@@ -38,6 +41,24 @@ export default class Animate {
 		let {style} = this;
 		ctx.clearRect(0, 0, canvas.width, canvas.height)
 		style.drawRectangle(0, 0, canvas.width, canvas.height, "#000408")
+	}
+
+	animateBorder() {
+		let {style} = this;
+
+		if (!game.map)
+			return;
+
+		let zoom = camera.warp ? camera.mapZ : camera.zoom;
+		var originPos = util.getScreenPos(new Vector(), zoom, camera.pos);
+		if(!camera.warp) {
+			ctx.globalCompositeOperation = 'destination-in';
+			style.drawCircle(originPos.x, originPos.y, game.map.mapRadius*zoom, "#000408");
+		}
+		ctx.globalCompositeOperation = 'source-over';
+		style.drawCircle(originPos.x, originPos.y, game.map.mapRadius*zoom, "white", {fill: false, outline: true, outlineWidth: 10*zoom, outlineColor: "white"})
+		
+
 	}
 
 	animateStars() {
@@ -60,11 +81,13 @@ export default class Animate {
 			return;
 		for (let id in game.screen.planets) {
 			let planet = game.screen.planets[id];
-			draw.drawPlanet(planet.pos, planet.radius, planet.type, {
-				color: planet.color,
-				strokeColor: planet.strokeColor
-			});
-			draw.drawTurret(planet);
+			if (planet) {
+				draw.drawPlanet(planet.pos, planet.radius, planet.type, {
+					color: planet.color
+				});
+				draw.drawTurret(planet);
+				draw.drawBase(planet);
+			}
 		}
 	}
 
@@ -124,6 +147,12 @@ export default class Animate {
 
 				if (util.getDistance(planet.pos.x, planet.pos.y, pos.x, pos.y) < planet.radius)
 					planetCollision = true;
+
+				for (let id in planet.bases) {
+					let base = planet.bases[id];
+					if (util.getDistance(base.pos.x, base.pos.y, pos.x, pos.y) < base.radius)
+						planetCollision = true;
+				}
 			}
 
 			if (old || playerCollision || planetCollision) {

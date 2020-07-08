@@ -28,7 +28,7 @@ class Star {
 	animate(rocket, qTree) {
 		let keys = input.keys;
 
-		let starDistance = 10;
+		let starDistance = 100;
 		let dz = camera.zoom;
 
 		if (camera.warp) {
@@ -39,7 +39,7 @@ class Star {
 
 		// Checks if the star is within screen bounds and corrects its position
 		if (this.x-camera.pos.x/starDistance > canvas.width) {
-			this.x = -canvas.width+camera.pos.x/starDistance;
+			this.x = -canvas.width-camera.pos.x/starDistance;
 			this.px = [this.x];
 		} else if (this.x-camera.pos.x/starDistance < -canvas.width) {
 			this.x = canvas.width+camera.pos.x/starDistance;
@@ -47,7 +47,7 @@ class Star {
 		}
 
 		if (this.y-camera.pos.y/starDistance > canvas.height) {
-			this.y = -canvas.height+camera.pos.y/starDistance;
+			this.y = -canvas.height-camera.pos.y/starDistance;
 			this.py = [this.y];
 		} else if (this.y-camera.pos.y/starDistance < -canvas.height) {
 			this.y = canvas.height+camera.pos.y/starDistance;
@@ -103,6 +103,7 @@ class Star {
 
 export default class Stars {
 	constructor(numberOfStars) {
+		this.starCount = numberOfStars
 		this.stars = [];
 		this.starQ = undefined;
 
