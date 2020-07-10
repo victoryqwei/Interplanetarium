@@ -12,6 +12,7 @@ import {camera} from '../visuals/Camera.js';
 import Style from "../visuals/Style.js";
 import {draw} from "../visuals/Draw.js";
 import {util} from "../util/Util.js";
+import Vector from "../util/Vector.js";
 
 class Star {
 	constructor() {
@@ -25,32 +26,35 @@ class Star {
 	}
 
 	// Animate the stars
-	animate(rocket, qTree) {
+	animate(rocket, qTree, tick) {
 		let keys = input.keys;
 
-		let starDistance = 100;
+		let starDistance = 10;
 		let dz = camera.zoom;
 
+		let pos = Vector.sub(camera.pos, camera.starOffset);
+
 		if (camera.warp) {
-			this.z -= delta*3; // Move the stars closer towards the screen
+			this.z -= delta*(1 - Math.abs(util.constrain(tick/1000, 0, 1) - 0.5) * 2)*3; // Move the stars closer towards the screen
 		} else if (game.state == "menu") {
 			this.z -= delta/30;
 		}
 
 		// Checks if the star is within screen bounds and corrects its position
-		if (this.x-camera.pos.x/starDistance > canvas.width) {
-			this.x = -canvas.width-camera.pos.x/starDistance;
+		if (this.x-pos.x/starDistance > canvas.width) {
+			this.x = -canvas.width-pos.x/starDistance;
 			this.px = [this.x];
-		} else if (this.x-camera.pos.x/starDistance < -canvas.width) {
-			this.x = canvas.width+camera.pos.x/starDistance;
+		} else if (this.x-pos.x/starDistance < -canvas.width) {
+			this.x = canvas.width+pos.x/starDistance;
 			this.px = [this.x];
 		}
 
-		if (this.y-camera.pos.y/starDistance > canvas.height) {
-			this.y = -canvas.height-camera.pos.y/starDistance;
+
+		if (this.y-pos.y/starDistance > canvas.height) {
+			this.y = -canvas.height-pos.y/starDistance;
 			this.py = [this.y];
-		} else if (this.y-camera.pos.y/starDistance < -canvas.height) {
-			this.y = canvas.height+camera.pos.y/starDistance;
+		} else if (this.y-pos.y/starDistance < -canvas.height) {
+			this.y = canvas.height+pos.y/starDistance;
 			this.py = [this.y];
 		}
 
@@ -58,22 +62,22 @@ class Star {
 		if (this.z <= 0) {
 			this.z = canvas.width-1;
 			this.pz = [canvas.width];
-			this.x = util.random(-canvas.width, canvas.width)+camera.pos.x/starDistance;
+			this.x = util.random(-canvas.width, canvas.width)+pos.x/starDistance;
 			this.px = [this.x];
-			this.y = util.random(-canvas.height, canvas.height)+camera.pos.y/starDistance;
+			this.y = util.random(-canvas.height, canvas.height)+pos.y/starDistance;
 			this.py = [this.y];
 		}
 
 		// Determine the position of the star on the screen
-		let sx = util.scale((this.x-camera.pos.x/starDistance) / this.z, 0, 1, 0, canvas.width)*dz;
-		let sy = util.scale((this.y-camera.pos.y/starDistance) / this.z, 0, 1, 0, canvas.height)*dz;
+		let sx = util.scale((this.x-pos.x/starDistance) / this.z, 0, 1, 0, canvas.width)*dz;
+		let sy = util.scale((this.y-pos.y/starDistance) / this.z, 0, 1, 0, canvas.height)*dz;
 
 		let t = util.scale(this.z, 0, canvas.width, 12*dz, 0); // Gets the size of the star
 
 		if (this.pz) {
 			// Gets the previous position of the star
-			let px = util.scale((this.px[0]-camera.pos.x/starDistance) / this.pz[0], 0, 1, 0, canvas.width)*dz;
-			let py = util.scale((this.py[0]-camera.pos.y/starDistance) / this.pz[0], 0, 1, 0, canvas.height)*dz;
+			let px = util.scale((this.px[0]-pos.x/starDistance) / this.pz[0], 0, 1, 0, canvas.width)*dz;
+			let py = util.scale((this.py[0]-pos.y/starDistance) / this.pz[0], 0, 1, 0, canvas.height)*dz;
 
 			// Draws the star
 			draw.drawStar(px, py, sx, sy, t);
@@ -85,7 +89,10 @@ class Star {
 		}
 
 		// Stores the previous positions of the star
-		let warpLength = camera.warp ? 1000/delta/144 * 8 : 1;
+		let starLength = (1 - Math.abs(util.constrain(tick/1000, 0, 1) - 0.5) * 2) * 20;
+		let warpLength = camera.warp ? 1000/delta/144 * starLength : 1;
+
+		camera.warpPerc = Math.abs(util.constrain(tick/1000, 0, 1));
 
 		this.px.push(this.x);
 		if (this.px.length > warpLength)
@@ -106,6 +113,8 @@ export default class Stars {
 		this.starCount = numberOfStars
 		this.stars = [];
 		this.starQ = undefined;
+
+		this.t = 0;
 
 		for (let i = 0; i < numberOfStars; i++) {
 			this.stars.push(new Star());
@@ -129,8 +138,11 @@ export default class Stars {
 				camera.mapZ = camera.minZoom;
 				camera.warp = false;
 			} else {
-				camera.mapZ += delta/200 * camera.mapZ;
+				this.t += delta/3;
+				camera.mapZ = 0.00001 * Math.pow(1.01, this.t);
 			}
+		} else {
+			this.t = 0;
 		}
 	}
 
@@ -140,7 +152,7 @@ export default class Stars {
 		ctx.save();
 		ctx.translate(canvas.width/2, canvas.height/2)
 		for (let star of this.stars) {
-			star.animate(rocket, this.starQ);
+			star.animate(rocket, this.starQ, this.t);
 		}
 		ctx.restore();
 	}

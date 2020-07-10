@@ -54,7 +54,7 @@ module.exports = class Room {
 
 	// Update players in each stage
 	updatePlayers() {
-		for (let id in this.players) {
+		/*for (let id in this.players) {
 			let p = this.players[id];
 			if (!p.rocket)
 				 continue;
@@ -63,11 +63,15 @@ module.exports = class Room {
 			if (p.rocket && p.rocket.xp >= stageXp) {
 				this.nextStage(id);
 			}
-		}
+		}*/
 	}
 
 	// Create new level
 	nextStage(playerId) {
+		let p = this.players[playerId];
+		let stageXp = p.stage*100+100;
+		if (p.rocket && p.rocket.xp < stageXp)
+			return;
 		// Update client level data
 		if (this.players[playerId].stage + 1 > 9)
 			return;
@@ -103,7 +107,7 @@ module.exports = class Room {
 			stage: 0
 		}
 		console.log(this.players[id].name + " joined room", this.id, "with id:", id, Date())
-		this.io.to(this.id).emit("msg", "Joined room "+ this.id + " with id: " + id + " " + Date());
+		this.io.to(this.id).emit("msg", "Successfully connected to ["+ this.id + "] with client id: [" + id + "] on " + Date());
 
 		this.io.to(id).emit("levelData", this.stages[this.players[id].stage]);
 	}

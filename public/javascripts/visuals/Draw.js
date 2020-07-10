@@ -22,7 +22,7 @@ class Draw {
 		this.style = new Style(ctx);
 	}
 
-	drawRocket(player, serverRocket, showParticles, name) {
+	drawRocket(player, serverRocket, showParticles, name, detail) {
 
 		let {style} = this;
 
@@ -51,8 +51,10 @@ class Draw {
 		}
 
 		// Check if rocket is in the screen
-		if (!util.inScreen(player.pos, 1, 20, camera.pos))
-			return;
+		if(detail) {
+			if (!util.inScreen(player.pos, 1, 20, camera.pos))
+				return;
+		}
 
 		// Draw body
         style.drawRect(pos.x, pos.y, width, height, player.angle, "#d3d3d3");
@@ -75,13 +77,15 @@ class Draw {
         style.drawRect(halfWidth, halfHeight, halfWidth, width, 0, player.color || "red");
         // Draw nose cone
         style.drawTriangle(0, -halfHeight - halfWidth, width, width, 0, player.color || "red");
-        // Draw player window
-        style.drawRoundedRect(0-width/4, -width, halfWidth, width, 3*zoom, "rgb(70, 70, 70)")
-        // Draw thruster caps
-        style.drawTriangle(halfWidth, width/1.33, halfWidth, halfWidth, 0, player.color || "red");
-        style.drawTriangle(-halfWidth, width/1.33, halfWidth, halfWidth, 0, player.color || "red");
-        // Draw body accent
-        style.drawTriangle(0, height/4, width/1.5, -width/1.5, 0, "#bdbdbd");
+        if(detail) {
+	        // Draw player window
+	        style.drawRoundedRect(0-width/4, -width, halfWidth, width, 3*zoom, "rgb(70, 70, 70)")
+	        // Draw thruster caps
+	        style.drawTriangle(halfWidth, width/1.33, halfWidth, halfWidth, 0, player.color || "red");
+	        style.drawTriangle(-halfWidth, width/1.33, halfWidth, halfWidth, 0, player.color || "red");
+	        // Draw body accent
+	        style.drawTriangle(0, height/4, width/1.5, -width/1.5, 0, "#bdbdbd");
+	    }
 
         ctx.restore();
         

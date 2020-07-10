@@ -12,12 +12,14 @@ class Camera {
 
 		this.pos = new Vector();
 		this.offset = new Vector();
+		this.starOffset = new Vector();
 		this.zoom = 0.6;
 
 		this.maxZoom = 3;
 		this.minZoom = 0.6;
 		this.mapZ = 0.00001;
 		this.warp = false;
+		this.warpPerc = 0;
 
 		this.follow = true;
 		this.toggle = false;

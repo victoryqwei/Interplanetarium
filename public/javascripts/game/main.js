@@ -12,14 +12,23 @@ import {camera} from "../visuals/Camera.js";
 import {util} from "../util/Util.js";
 
 (function () {
+
+
 	// Initialize classes
 	var animate = new Animate();
 	var ui = new UI();
 
 	//Update username
 	if(util.getCookie('userName') != "") {
-   		$("#username").val(JSON.parse(util.getCookie('userName')));
+   		window.username = JSON.parse(util.getCookie('userName'));
 	}
+
+	// Console credits
+	console.clear();
+	console.group("Interplanetarium 2");
+	console.log("Created by Victor Wei and Evan Cowan");
+	console.log("Join the discord: https://discord.gg/uKYXPeA")
+	console.groupEnd();
 
 	// Update loop
 	function update() {

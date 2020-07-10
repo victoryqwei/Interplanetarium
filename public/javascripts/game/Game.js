@@ -38,6 +38,10 @@ class Game {
 		this.log = [];
 
 		this.state = "menu"; // "menu", "play", "settings", "starmap"
+		this.loopId = undefined;
+
+		// Replay
+		this.replay = [];
 	}
 
 	update() {
@@ -56,7 +60,7 @@ class Game {
 		let tick = Math.round(1000/tps);
 
 		// Client -> Server loop
-		setInterval(function () {
+		this.loopId = setInterval(function () {
 			socket.emit('update', {
 				id: socket.id,
 				rocket: {
@@ -72,14 +76,85 @@ class Game {
 				effects: vfx.newEffects,
 			})
 
+			/*// Replay
+			if(game.planets && game.map) {
+
+				// Add rocket
+				let replayRocket = {
+					pos: rocket.pos,
+					vel: rocket.vel,
+					angle: rocket.angle,
+				}
+
+				// Add planets
+				let replayPlanets = [];
+
+				for (let id in game.map.planets) {
+					let p = game.map.planets[id]
+
+					// Add turrets
+					let replayTurrets = [];
+
+					for (let id in p.turrets) {
+						let t = p.turrets[id]
+						replayTurrets.push({
+							pos: t.pos,
+							angle: t.angle,
+							barrelHeading: t.barrelHeading,
+						});
+					}
+
+					replayPlanets.push({
+						pos: p.pos,
+						radius: p.radius
+					});
+				}
+
+				let replay = {
+					rocket: replayRocket,
+					planets: replayPlanets
+				}
+			}*/
+
 			rocket.newMissiles = [];
 			vfx.newEffects = [];
 		}, tick)
 
 		this.state = "play";
+
+
+	}
+
+	clear() {
+		// Player data
+		this.rocket = new Rocket();
+
+		// World data
+		this.map = undefined; // The entire map
+		this.mapQ = undefined; // The map in a quadtree (easy collision detection)
+		this.screen = undefined; // Everything in the screen;
+		this.radar = undefined; // Everything in the minimap;
+
+		// Server data
+		this.players = {};
+		this.missiles = [];
+
+		// Sound data
+		this.sound = new Sound();
+
+		this.log = [];
+
+		this.state = "menu"; // "menu", "play", "settings", "starmap"
+		camera.warp = false;
+
+		roomId = undefined;
+
+		clearInterval(this.loopId);
 	}
 
 	updateScreen() {
+		//if(game.map)
+			//console.log(game.map.planets)
 		if (!this.mapQ)
 			return;
 
@@ -137,6 +212,8 @@ class Game {
 	}
 
 	receiveMapData(map) {
+		if (!this.map)
+			return;
 		// Create map quadtree
 		this.mapQ = new QuadTree(new Rectangle(0, 0, this.map.mapRadius, this.map.mapRadius), 4)
 
@@ -175,7 +252,7 @@ class Game {
 		// Update player experience
 		for (let e of map.experience) {
 			if (e.id == socket.id) {
-				this.rocket.xp += e.xp;
+				this.rocket.xp = Math.min(this.rocket.xp + e.xp, this.map.stage*100+100);
 			}
 		}
 	}

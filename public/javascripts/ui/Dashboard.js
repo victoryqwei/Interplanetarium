@@ -24,7 +24,6 @@ $(window).resize(function () {
 
 util.dragElement(document.getElementById("interface-container"));
 
-
 export default class Dashboard {
 	constructor() {
 		this.style = new Style(htx);
@@ -90,25 +89,14 @@ export default class Dashboard {
 
 		if (xpProgress >= 1) { 
 			// Full XP Bar
-			style.drawRectangle(hanvas.width/2 - 200 + leftTextWidth, 8, xpWidth, xpHeight, "red", {alpha: 1});
+			style.drawRectangle(hanvas.width/2 - 200 + leftTextWidth, 8, xpWidth, xpHeight, "lime", {alpha: 1});
 		} else {
 			style.drawRectangle(hanvas.width/2 - 200 + leftTextWidth, 8, xpWidth, xpHeight, "white", {alpha: 0.2});
 			style.drawRectangle(hanvas.width/2 - 200 + leftTextWidth, 8, xpWidth*xpProgress - this.xp, xpHeight, "white", {alpha: 0.8});
-			style.drawRectangle(hanvas.width/2 - 200 + xpWidth*xpProgress - this.xp + leftTextWidth, 8, this.xp, xpHeight, "green", {alpha: 1});
+			style.drawRectangle(hanvas.width/2 - 200 + xpWidth*xpProgress - this.xp + leftTextWidth, 8, this.xp, xpHeight, "lime", {alpha: 1});
 		}
 
-		if (xpProgress >= 1 && !this.fullXp) {
-			this.fullXp = true;
-
-			// Draw launch button
-
-			/*$("#interface-container").animate({height:'150px'}, {
-				duration: 500,
-				step: function (diff) {
-					hanvas.height = ;
-				}
-			});*/
-		}
+		this.fullXp = xpProgress >= 1;
 
 		// Animate VITALS
 		let vitalHeight = 100;

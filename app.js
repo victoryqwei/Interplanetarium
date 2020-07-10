@@ -76,17 +76,30 @@ io.on('connection', function(socket) {
 		socket.emit('pongServer', data);
 	})
 
+	socket.on('nextLevel', function (data) {
+		if (roomId && rooms[roomId])
+			rooms[roomId].nextStage(socket.id);
+	})
+
 	// Receive log
 	socket.on('serverLog', (data) => {
 		if (roomId)
 			rooms[roomId].receiveLog(data, socket.id);
 	})
 
+	// Disconnect from room
+	socket.on('leaveRoom', (data) => {
+		if (rooms[roomId]) {
+			rooms[roomId].leave(socket.id);
+			roomId = undefined;
+		}
+	})
+
 	// Disconnect
 	socket.on("disconnect", () => {
 		socket.leave(roomId, () => {
 			if (rooms[roomId]) {
-				rooms[roomId].leave(socket.id); // let the server manager manage this
+				rooms[roomId].leave(socket.id);
 			}
 			console.log("Left room with id: ", roomId)
 		})

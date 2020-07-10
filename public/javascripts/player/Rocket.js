@@ -22,8 +22,8 @@ export default class Rocket {
 		this.acc = new Vector();
 
 		this.xp = 0;
-
 		this.speed = 0;
+		this.lives = 1;
 
 		// Orientation data
 		this.heading = new Vector(1, 0);
@@ -110,18 +110,19 @@ export default class Rocket {
 
 		// Controls
 		this.controlType = "mouse" // Or "keyboard"
+
+		this.respawnTime = 3000;
 	}
 
 	update() {
-		if (game.state != "play" || camera.warp)
+		if (game.state != "play" || camera.warp || !game.map)
 			return;
 
 		this.getInput();
 		this.move();
-		this.updateVitals();
 		this.collision();
-
 		draw.addParticles(this);
+		this.updateVitals();
 	}
 
 	getInput() {
@@ -132,12 +133,16 @@ export default class Rocket {
 		angle.sub(new Vector(canvas.width/2, canvas.height/2));
 		
 		// Respawn
-		if (keys[82]) { // R
+		if (keys[82] & !this.respawnFlag) { // R
+			this.respawnFlag = true;
 			if (!this.alive || this.fuel <= 0 || this.integrity <= 0)
 				this.respawn();
 
-			if (keys[16]) // Shift + R
+			if (keys[16]) { // Shift + R
 				this.respawn();
+			}
+		} else {
+			this.respawnFlag = false;
 		}
 
 		// Steering
@@ -194,6 +199,13 @@ export default class Rocket {
 			game.missiles.push(missileData)
 			this.newMissiles.push(missileData)
 		}
+
+		// Next stage
+		let stageXp = game.map.stage*100+100;
+ 		let xpProgress = Math.min((game.rocket.xp/stageXp), 1);
+		if (keys[32] && xpProgress >= 1) {
+			socket.emit('nextLevel');
+		}
 	}
 
 	attract(planet) {
@@ -249,6 +261,15 @@ export default class Rocket {
 			gravForce.add(this.attract(p));
 		}
 
+		// Gravitational force outside the map
+		let distMapBorder = this.pos.getMag() - game.map.mapRadius
+		if (distMapBorder > 0) {
+			let pullForce = this.pos.copy();
+			pullForce.normalize();
+			pullForce.mult(-1 * 500 * distMapBorder/100);
+			gravForce.add(pullForce);
+		}
+
 		// The force is with you
 		this.gForce = gravForce.getMag()/433;
 		if (this.gForce == NaN)
@@ -265,8 +286,7 @@ export default class Rocket {
 			this.vel.normalize();
 			this.vel.mult(this.maxSpeed);
 		}
-
-		if (this.closestPlanetDistance < 200) { // Add air resistance
+		if (this.closestPlanetDistance < 200 && this.closestPlanet && this.closestPlanet.name != "Black Hole") { // Add air resistance
 			this.vel.setMag(this.vel.getMag() - delta/50)
 		}
 
@@ -283,17 +303,21 @@ export default class Rocket {
 		let newFuel = this.fuel - (Math.abs(this.thrust) + Math.abs(this.steer)*200) * delta / 1000 * this.fuelConsumption;
 		this.fuel = util.constrain(newFuel, 0, this.maxFuel);
 
-		// Update integrity
+		// Update integrity outside of map
 		if (this.alive && this.pos.getMag() > game.map.mapRadius && Date.now()-this.deathTick > 250) {
 			this.deathTick = Date.now();
 			this.integrity -= 1;
 			vfx.add(this.pos, "damage", {size: 20, alpha: 1, duration: 1000, text: -1, color: "red"})
 		}
 
+		// Update closest planet distance
+		this.closestPlanetDistance = Math.max(0, this.getClosestPlanet(game.screen.planets));
+
 		// Check for death conditions
 		if (this.fuel <= 0) {
 			if(this.alive) {
-				game.sendLog("fuel");
+				this.death("fuel");
+				this.lives -= 1;
 			}
 			this.alive = false;
 			this.thrust = 0;
@@ -302,14 +326,19 @@ export default class Rocket {
 
 		if (this.integrity <= 0) {
 			if(this.alive) {
-				game.sendLog("death");
+				this.death("death")
+				this.thrust = 0;
 			}
 			this.alive = false;
-			this.thrust = 0;
 		}
 
-		// Update closest planet distance
-		this.closestPlanetDistance = Math.max(0, this.getClosestPlanet(game.screen.planets));
+		if (this.lives <= 0) {
+			this.endGame();
+		}
+
+		if(Date.now() - this.deathTick > this.respawnTime && !this.alive) {
+			this.respawn();
+		}
 	}
 
 	collision() {
@@ -352,7 +381,7 @@ export default class Rocket {
 			if (this.speed > this.landingSpeed || !this.goodLanding) {
 				// High velocity or wrong landing
 				if (this.alive) {
-					game.sendLog("crash");
+					this.death("crash");
 					vfx.add(this.pos, "explosion", {size: 100, alpha: 1, duration: 200})
 					vfx.add(this.pos, "damage", {size: 30, alpha: 1, duration: 1000, text: -Math.round(this.integrity), color: "red"})
 				}
@@ -409,10 +438,27 @@ export default class Rocket {
 	        		this.mortalCourse = util.getDistance(planet.pos, this.pos) - planet.radius;
 	        	}
 	        }
-        }  	
+        }	
 	}
 
-	respawn(inSpace) {
+
+	endGame() {
+		$("#minimap-container").hide();
+		$("#interface-container").hide();
+		game.state = "menu";
+		this.alive = true;
+		$("#title").show();
+		socket.emit('leaveRoom')
+		game.clear();
+	}
+
+	death(event) {
+		game.sendLog(event);
+		this.lives -= 1;
+		this.deathTick = Date.now();
+	}
+
+	respawn() {
 
 		if (!game.map)
 			return;
@@ -424,10 +470,12 @@ export default class Rocket {
 		let notSpawned = true;
 		while (notSpawned) {
 			this.pos = util.randCircle(2000);
+			// Screw this function
+			camera.starOffset = Vector.add(Vector.add(this.pos, camera.offset), Vector.sub(camera.starOffset, camera.pos.copy()));
 			let collidedWithAnything = false;
 			for (let id in game.map.planets) {
 				let p = game.map.planets[id]
-				if(util.circleCollidesRect(p, this)) {
+				if (util.circleCollidesRect(p, this)) {
 					collidedWithAnything = true;
 				}
 			}

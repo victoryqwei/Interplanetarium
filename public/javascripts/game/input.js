@@ -9,6 +9,8 @@ import {game} from "./Game.js";
 export let input = {};
 import {camera} from "../visuals/Camera.js";
 
+window.username = "Player"
+
 // Keyboard events
 input.keys = {};
 onkeydown = onkeyup = function(e){
@@ -55,3 +57,8 @@ $(window).bind('mousewheel', function(event) {
         camera.zoom = Math.max(camera.zoom-delta/100, camera.minZoom);
     }
 });
+
+/*// Leave tab event
+$(window).blur(function() {
+  alert("You have been disconnected from the server.");
+});*/

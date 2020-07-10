@@ -8,21 +8,21 @@ import {game} from "../game/Game.js";
 import {camera} from '../visuals/Camera.js';
 import {util} from "../util/Util.js";
 
+
+window.roomId = undefined;
+
 (function () {
 
-	let roomId = undefined;
 
 	function startGame() {
 		if (document.readyState != "complete")
 			return;
-
-
 		
 		$("#title").hide();
 		if (!roomId && !game.map) {
 			let id = window.location.pathname.replace("/", "") /*|| randomString(7)*/;
-			console.log("Joining room with id", id);
-			let username = $("#username").val() || ("Player" + util.randInt(1000, 9999));
+			console.log("Establishing connection to server: [" + id + "]");
+			let username = window.username || ("Player" + util.randInt(1000, 9999));
 			socket.emit("joinRoom", {
 				id: id,
 				name: username
@@ -38,26 +38,19 @@ import {util} from "../util/Util.js";
 			// Start the game
 			game.start();
 		}
-
-		// Respawn
-		let rocket = game.rocket;
-		if (!rocket.alive || rocket.fuel <= 0 || rocket.integrity <= 0) {
-			rocket.respawn();
-		}
 	}
 
 	function setCookie() {
 
 		// Name cookie
-		let userName = $("#username").val();
+		let userName = window.username;
 		let alphanumeric = /^[0-9a-zA-Z]+$/;
 
 		// Make sure name is alphanumeric
-		if(($("#username").val()).match(alphanumeric)) {
+		if((window.username).match(alphanumeric)) {
 		 	if(util.getCookie('userName') == "") {
 
 		 		// Create cookie
-				console.log('Created name cookie with value: ' + JSON.stringify(userName))
 				let cname = 'userName';
 				let cvalue = JSON.stringify(userName);
 				let exdays = 365;
@@ -66,9 +59,7 @@ import {util} from "../util/Util.js";
 			if(JSON.stringify($("#name").val()) != util.getCookie('userName')) {
 
 				// Delete cookie
-				console.log('Deleted name cookie with value: ' + util.getCookie('userName'));
 				util.deleteCookie('userName');
-				console.log('Created name cookie with value: ' + JSON.stringify(userName));
 				let cname = 'userName';
 				let cvalue = JSON.stringify(userName);
 				let exdays = 365;
@@ -80,13 +71,40 @@ import {util} from "../util/Util.js";
 	}
 
 	// Join / create a room
-	$(window).click(function () {
+	$(document).click(function () {
 		startGame();
 	})
 
-	$("#username").on('keyup', function(e) {
+	$(window).click(function () {
+		// Respawn
+		let rocket = game.rocket;
+		if (!rocket.alive || rocket.fuel <= 0 || rocket.integrity <= 0) {
+			rocket.respawn();
+		}
+	})
+
+	// Start game
+	$(document).on('keyup', function(e) {
 		if (e.keyCode == 13) {
 			startGame();
 		}
 	})
+
+	// Key input
+	$(document).on('keydown', function(e) {
+		let alphanumeric = /^[0-9a-zA-Z]+$/
+		if(game.state == "menu") {
+			if(e.keyCode == 8) {
+				window.username = window.username.substring(0, window.username.length-1)
+			} else {
+				if (alphaOnly(e.keyCode) && window.username.length < 15) {
+					window.username = window.username + e.originalEvent.key;
+				}
+			}
+		}
+	})
+
+	function alphaOnly(key) {
+	   return ((key >= 48 && key <= 90));
+	};
 }())

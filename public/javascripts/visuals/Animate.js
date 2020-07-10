@@ -49,11 +49,19 @@ export default class Animate {
 		if (!game.map)
 			return;
 
+		if (!game.rocket)
+			return;
+
 		let zoom = camera.warp ? camera.mapZ : camera.zoom;
 		var originPos = util.getScreenPos(new Vector(), zoom, camera.pos);
-		if(!camera.warp) {
-			ctx.globalCompositeOperation = 'destination-in';
-			style.drawCircle(originPos.x, originPos.y, game.map.mapRadius*zoom, "#000408");
+		if (!camera.warp && game.rocket.closestPlanet) {
+			if (game.rocket.closestPlanet.type == "blackhole") {
+				ctx.globalCompositeOperation = 'destination-atop';
+				style.drawCircle(originPos.x, originPos.y, game.map.mapRadius*zoom, "rgba(0,4,8," + Math.min(game.rocket.closestPlanetDistance/300, 1)+")");
+			} else {
+				ctx.globalCompositeOperation = 'destination-atop';
+				style.drawCircle(originPos.x, originPos.y, game.map.mapRadius*zoom, "rgba(0,4,8,1)");
+			}
 		}
 		ctx.globalCompositeOperation = 'source-over';
 		style.drawCircle(originPos.x, originPos.y, game.map.mapRadius*zoom, "white", {fill: false, outline: true, outlineWidth: 10*zoom, outlineColor: "white"})
@@ -66,13 +74,17 @@ export default class Animate {
 	}
 
 	animateRocket() {
-		draw.drawRocket(game.rocket, false, true, game.rocket.name);
+		draw.drawRocket(game.rocket, false, true, game.rocket.name, true);
 	}
 
 	animatePlayers() {
 		for (let id in game.players) {
 			if (id != socket.id)
-				draw.drawRocket(game.players[id].rocket, true, true, game.players[id].name);
+				if(camera.warp) {
+					draw.drawRocket(game.players[id].rocket, true, true, game.players[id].name, false);
+				} else {
+					draw.drawRocket(game.players[id].rocket, true, true, game.players[id].name, true);
+				}
 		}
 	}
 
