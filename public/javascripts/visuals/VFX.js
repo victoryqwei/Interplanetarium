@@ -81,7 +81,7 @@ export default class Effect {
 		} else {
 			let zoom = camera.zoom;
 			let screenPos = util.getScreenPos(this.pos, zoom, camera.pos);
-			style.drawText(this.text, screenPos.x, screenPos.y - (100 * t), "bold " + this.size + "px Arial", this.color, "middle", "center", Math.max(this.alpha * (1-t), 0));
+			style.drawText(this.text, screenPos.x, screenPos.y - (100 * t), "bold " + this.size*zoom/0.6 + "px Arial", this.color, "middle", "center", Math.max(this.alpha * (1-t), 0));
 		}
 	}
 

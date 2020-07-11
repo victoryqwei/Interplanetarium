@@ -15,12 +15,16 @@ class Camera {
 		this.starOffset = new Vector();
 		this.zoom = 0.6;
 
+		// Camera zoom
 		this.maxZoom = 3;
 		this.minZoom = 0.6;
+
 		this.mapZ = 0.00001;
 		this.warp = false;
+		this.backWarp = false;
 		this.warpPerc = 0;
 
+		// Camera settings
 		this.follow = true;
 		this.toggle = false;
 

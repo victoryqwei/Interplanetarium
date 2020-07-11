@@ -6,10 +6,11 @@ This file gets the raw user input.
 
 import Vector from "../util/Vector.js";
 import {game} from "./Game.js";
+import {util} from "../util/Util.js";
 export let input = {};
 import {camera} from "../visuals/Camera.js";
 
-window.username = "Player"
+window.username = "Player" + util.randInt(1000, 9999);
 
 // Keyboard events
 input.keys = {};

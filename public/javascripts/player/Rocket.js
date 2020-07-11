@@ -12,6 +12,7 @@ import {vfx} from "../visuals/VFXManager.js";
 import {camera} from "../visuals/Camera.js";
 import {draw} from "../visuals/Draw.js";
 import {util} from "../util/Util.js";
+import {replay} from "../game/Replay.js";
 
 export default class Rocket {
 	constructor(x, y, mass, width, height) {
@@ -23,7 +24,7 @@ export default class Rocket {
 
 		this.xp = 0;
 		this.speed = 0;
-		this.lives = 1;
+		this.lives = 3;
 
 		// Orientation data
 		this.heading = new Vector(1, 0);
@@ -86,7 +87,7 @@ export default class Rocket {
 		this.radius = cfg.radius || 50;
 
 		// Speed
-		this.maxSpeed = cfg.maxSpeed || 800;
+		this.maxSpeed = cfg.maxSpeed || 1000;
 		this.landingSpeed = cfg.landingSpeed || 600;
 
 		// Mass
@@ -111,18 +112,20 @@ export default class Rocket {
 		// Controls
 		this.controlType = "mouse" // Or "keyboard"
 
-		this.respawnTime = 3000;
+		this.respawnTime = 5000;
 	}
 
 	update() {
-		if (game.state != "play" || camera.warp || !game.map)
+		if (game.state == "menu" || camera.warp || !game.map)
 			return;
 
+		this.updateVitals();
 		this.getInput();
+		if (!this.alive || game.state == "replay")
+			return
 		this.move();
 		this.collision();
 		draw.addParticles(this);
-		this.updateVitals();
 	}
 
 	getInput() {
@@ -135,7 +138,7 @@ export default class Rocket {
 		// Respawn
 		if (keys[82] & !this.respawnFlag) { // R
 			this.respawnFlag = true;
-			if (!this.alive || this.fuel <= 0 || this.integrity <= 0)
+			if (!this.alive || game.state == "replay")
 				this.respawn();
 
 			if (keys[16]) { // Shift + R
@@ -193,7 +196,8 @@ export default class Rocket {
 				time: Date.now(),
 				id: socket.id,
 				origin: "player",
-				type: "laser"
+				type: "laser",
+				damage: 5
 			}
 
 			game.missiles.push(missileData)
@@ -307,7 +311,7 @@ export default class Rocket {
 		if (this.alive && this.pos.getMag() > game.map.mapRadius && Date.now()-this.deathTick > 250) {
 			this.deathTick = Date.now();
 			this.integrity -= 1;
-			vfx.add(this.pos, "damage", {size: 20, alpha: 1, duration: 1000, text: -1, color: "red"})
+			vfx.add(this.pos, "damage", {size: 20, alpha: 1, duration: 1000, text: -1, color: "red"}, false, false)
 		}
 
 		// Update closest planet distance
@@ -326,17 +330,17 @@ export default class Rocket {
 
 		if (this.integrity <= 0) {
 			if(this.alive) {
-				this.death("death")
+				if (this.pos.getMag() > game.map.mapRadius) {
+					this.death("edge");
+				} else {
+					this.death("death");
+				}
 				this.thrust = 0;
 			}
 			this.alive = false;
 		}
 
-		if (this.lives <= 0) {
-			this.endGame();
-		}
-
-		if(Date.now() - this.deathTick > this.respawnTime && !this.alive) {
+		if (Date.now() - this.deathTick > this.respawnTime && !this.alive) {
 			this.respawn();
 		}
 	}
@@ -382,8 +386,8 @@ export default class Rocket {
 				// High velocity or wrong landing
 				if (this.alive) {
 					this.death("crash");
-					vfx.add(this.pos, "explosion", {size: 100, alpha: 1, duration: 200})
-					vfx.add(this.pos, "damage", {size: 30, alpha: 1, duration: 1000, text: -Math.round(this.integrity), color: "red"})
+					vfx.add(this.pos, "explosion", {size: 100, alpha: 1, duration: 200}, false, false)
+					vfx.add(this.pos, "damage", {size: 30, alpha: 1, duration: 1000, text: -Math.round(this.integrity), color: "red"}, false, false)
 				}
 				this.alive = false;
 			} else {
@@ -443,19 +447,27 @@ export default class Rocket {
 
 
 	endGame() {
+		// Backwards warp animation
+		camera.warp = true;
+		camera.backWarp = true;
+
+		// Hide the dashboard
 		$("#minimap-container").hide();
 		$("#interface-container").hide();
-		game.state = "menu";
-		this.alive = true;
-		$("#title").show();
-		socket.emit('leaveRoom')
-		game.clear();
 	}
 
 	death(event) {
+		let _this = this;
+		let _event = event;
+		this.replayId = setTimeout(function () {
+			replay.start(_event, _this);
+		}, 2000)
+
+
+		this.deathTick = Date.now();
+		
 		game.sendLog(event);
 		this.lives -= 1;
-		this.deathTick = Date.now();
 	}
 
 	respawn() {
@@ -463,14 +475,24 @@ export default class Rocket {
 		if (!game.map)
 			return;
 
+		if (game.rocket.lives <= 0) {
+			this.endGame();
+		}
+
 		camera.zoom = camera.minZoom;
+
+		if (game.state == "replay") 
+			replay.end();
+		else
+			clearTimeout(this.replayId)
 
 		// Spawn in a random location
 		this.angle = util.random(0, Math.PI*2);
 		let notSpawned = true;
 		while (notSpawned) {
 			this.pos = util.randCircle(2000);
-			// Screw this function
+
+			// Offset the star to make sure it stays the same
 			camera.starOffset = Vector.add(Vector.add(this.pos, camera.offset), Vector.sub(camera.starOffset, camera.pos.copy()));
 			let collidedWithAnything = false;
 			for (let id in game.map.planets) {

@@ -15,8 +15,8 @@ var planetNames = ["Onvoacury","Tephoatov","Thucurn","Yethiri","Seutera","Zeanop
 module.exports = class Map {
 	constructor(stageNumber, mapSize) {
 		this.stage = stageNumber;
-		this.planetNumber = stageNumber*20+5 || 200;
-		this.mapRadius = (stageNumber+1)*2000 || 10000;
+		this.planetNumber = stageNumber*10+10 || 200;
+		this.mapRadius = ((stageNumber+1)*500 + 3000) || 10000;
 
 		// Planets
 		this.planets = {};
@@ -77,9 +77,9 @@ module.exports = class Map {
     			if (Math.random() > 0) {
 	    			// Push death effect
 					this.newEffects.push({
-					pos: this.planets[id].pos,
-					type: "implosion", 
-					options: {size: this.planets[id].radius, alpha: 1, duration: 1000, color: this.planets[id].color}
+						pos: this.planets[id].pos,
+						type: "implosion", 
+						options: {size: this.planets[id].radius, alpha: 1, duration: 1000, color: this.planets[id].color}
 					})
 
 					// Delete planet
@@ -134,11 +134,11 @@ module.exports = class Map {
 					let turret = this.planets[p.data.id].turrets[p.data.turretId];
 					if (turret && distance < turret.radius) {
 						collision = true;
-						turret.health -= 7;
+						turret.health -= m.damage;
 						this.newEffects.push({
 							pos: pos,
 							type: "damage", 
-							options: {size: 20, alpha: 1, duration: 1000, text: -7, color: "red"}
+							options: {size: 20, alpha: 1, duration: 1000, text: -m.damage, color: "red"}
 						})
 
 						if (turret.health <= 0) {
@@ -155,11 +155,11 @@ module.exports = class Map {
 					let base = this.planets[p.data.id].bases[p.data.baseId];
 					if (base && distance < base.radius) {
 						collision = true;
-						base.health -= 7;
+						base.health -= m.damage;
 						this.newEffects.push({
 							pos: pos,
 							type: "damage", 
-							options: {size: 20, alpha: 1, duration: 1000, text: -7, color: "red"}
+							options: {size: 20, alpha: 1, duration: 1000, text: -m.damage, color: "red"}
 						})
 
 						if (base.health <= 0) {
@@ -212,7 +212,7 @@ module.exports = class Map {
 		}
 
 		// Spawn blackholes
-		if(Math.random() > 0.95) {
+		if (Math.random() > 1 - this.stage/100) {
 			planet.name = "Black Hole"
 			planet.color = "#000000"
 			planet.type = "blackhole";
@@ -230,7 +230,7 @@ module.exports = class Map {
 		}
 
 		// Create planet
-		let spawnedPlanet = new Planet(location.x, location.y, planet.mass, planet.radius, planet.type, planet.name, planet.color, id)
+		let spawnedPlanet = new Planet(location.x, location.y, planet.mass, planet.radius, planet.type, planet.name, planet.color, id, this.stage)
 
 		// Update quadtrees
 		var point = new Point(location.x, location.y, planet.radius, spawnedPlanet);

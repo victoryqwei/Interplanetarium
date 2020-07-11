@@ -125,8 +125,12 @@ module.exports = class Turret {
 			speed: this.type == "laser" ? 0.6 : 0.4,
 			time: Date.now(),
 			id: this.id,
+			turretId: this.turretId,
+			missileId: Function.randomString(5),
 			origin: "turret",
-			type: this.type
+			type: this.type,
+			realPos: bulletPos,
+			damage: this.level * 2 - 1
 		}
 
 		missiles.push(missileData);

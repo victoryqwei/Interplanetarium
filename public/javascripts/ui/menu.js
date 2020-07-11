@@ -22,7 +22,7 @@ window.roomId = undefined;
 		if (!roomId && !game.map) {
 			let id = window.location.pathname.replace("/", "") /*|| randomString(7)*/;
 			console.log("Establishing connection to server: [" + id + "]");
-			let username = window.username || ("Player" + util.randInt(1000, 9999));
+			let username = window.username;
 			socket.emit("joinRoom", {
 				id: id,
 				name: username
@@ -73,14 +73,6 @@ window.roomId = undefined;
 	// Join / create a room
 	$(document).click(function () {
 		startGame();
-	})
-
-	$(window).click(function () {
-		// Respawn
-		let rocket = game.rocket;
-		if (!rocket.alive || rocket.fuel <= 0 || rocket.integrity <= 0) {
-			rocket.respawn();
-		}
 	})
 
 	// Start game

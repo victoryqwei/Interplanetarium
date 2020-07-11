@@ -25,12 +25,10 @@ export default class Animate {
 	animateAll() {
 		this.animateBackground();
 		this.animateStars();
-		if (game.state == "play") {
+		if (game.state != "menu") {
 			this.animateMissiles();
 			this.animatePlanets();
-		}
-		this.animateBorder();
-		if (game.state == "play") {
+			this.animateBorder();
 			this.animateRocket();
 			this.animatePlayers();
 			this.animateVfx();
@@ -79,12 +77,13 @@ export default class Animate {
 
 	animatePlayers() {
 		for (let id in game.players) {
-			if (id != socket.id)
+			if (id != socket.id) {
 				if(camera.warp) {
 					draw.drawRocket(game.players[id].rocket, true, true, game.players[id].name, false);
 				} else {
 					draw.drawRocket(game.players[id].rocket, true, true, game.players[id].name, true);
 				}
+			}
 		}
 	}
 
@@ -95,7 +94,8 @@ export default class Animate {
 			let planet = game.screen.planets[id];
 			if (planet) {
 				draw.drawPlanet(planet.pos, planet.radius, planet.type, {
-					color: planet.color
+					color: planet.color,
+					name: planet.name
 				});
 				draw.drawTurret(planet);
 				draw.drawBase(planet);
@@ -127,59 +127,77 @@ export default class Animate {
 			let t = Date.now()-m.time;
 			let pos = Vector.copy(m.pos);
 
-			if (m.type == "laser") {
-				let deltaPos = Vector.mult(m.heading, t)
-				deltaPos.mult(m.speed);
-				pos.add(deltaPos);
+			if (game.state != "replay") {
+
+				if (m.type == "laser") {
+					let deltaPos = Vector.mult(m.heading, t)
+					deltaPos.mult(m.speed);
+					pos.add(deltaPos);
+				}
+
+				// Seeking missile
+				if (m.type == "seeking" && util.getDistance(m.pos, rocket.pos) < 1000) {
+					let target = Vector.normalize(Vector.sub(rocket.pos, pos))
+					m.acc = target;
+					m.vel = Vector.add(m.vel, Vector.mult(m.acc, t));
+					m.vel = Vector.mult(Vector.normalize(m.vel), 1000 * m.speed);
+
+					m.angle = Math.atan2(target.y, target.x)
+				}
+
+				pos.add(Vector.mult(m.vel, t/1000));
+
+				game.missiles[i].realPos = pos.copy();
 			}
-
-			// Seeking missile
-			if (m.type == "seeking" && util.getDistance(m.pos, rocket.pos) < 1000) {
-				let target = Vector.normalize(Vector.sub(rocket.pos, pos))
-				m.acc = target;
-				m.vel = Vector.add(m.vel, Vector.mult(m.acc, t));
-				m.vel = Vector.mult(Vector.normalize(m.vel), 1000 * m.speed);
-
-				m.angle = Math.atan2(target.y, target.x)
-			}
-
-			pos.add(Vector.mult(m.vel, t/1000));
 
 			// Draw the missile
 			let screenPos = util.getScreenPos(pos, camera.zoom, camera.pos);
 			style.drawRect(screenPos.x, screenPos.y, 24*zoom, 8*zoom, m.angle, color);
 
-			// Check if projectile is too old
-			let old = t > 1000/m.speed;
-			let playerCollision = m.id != socket.id && util.getDistance(rocket.pos.x, rocket.pos.y, pos.x, pos.y) < 40;
-			let planetCollision = false;
+			if (game.state != "replay") {
 
-			for (let id in game.screen.planets) {
-				let planet = game.screen.planets[id];
+				// Check if projectile is too old
+				let old = t > 1000/m.speed;
+				let playerCollision = m.id != socket.id && util.getDistance(rocket.pos.x, rocket.pos.y, pos.x, pos.y) < 40 && rocket.alive;
+				let planetCollision = false;
 
-				if (util.getDistance(planet.pos.x, planet.pos.y, pos.x, pos.y) < planet.radius)
-					planetCollision = true;
+				for (let id in game.screen.planets) {
+					let planet = game.screen.planets[id];
 
-				for (let id in planet.bases) {
-					let base = planet.bases[id];
-					if (util.getDistance(base.pos.x, base.pos.y, pos.x, pos.y) < base.radius)
+					if (util.getDistance(planet.pos.x, planet.pos.y, pos.x, pos.y) < planet.radius)
 						planetCollision = true;
+
+					for (let id in planet.bases) {
+						let base = planet.bases[id];
+						if (util.getDistance(base.pos.x, base.pos.y, pos.x, pos.y) < base.radius)
+							planetCollision = true;
+					}
 				}
+
+				if (playerCollision || planetCollision) {
+					vfx.add(pos, "explosion", {size: 10, alpha: 1, duration: 100, color: color}, false, false)
+				}
+
+				if (playerCollision) {
+					vfx.add(pos, "damage", {size: 20, alpha: 1, duration: 1000, text: -(m.damage || 1), color: color}, false, false)
+					game.rocket.integrity -= m.damage;
+					if (game.rocket.integrity <= 0 && game.rocket.alive) {
+						game.rocket.lastHit = {
+							id: m.id,
+							turretId: m.turretId,
+							missileId: m.missileId
+						};
+
+						vfx.add(pos, "explosion", {size: 100, alpha: 1, duration: 200}, false, false)
+					}
+					
+				}
+
+				if (old || playerCollision || planetCollision) {
+					game.missiles.splice(i, 1)
+				}
+
 			}
-
-			if (old || playerCollision || planetCollision) {
-				game.missiles.splice(i, 1)
-			}
-
-			if (playerCollision || planetCollision) {
-				vfx.add(pos, "explosion", {size: 10, alpha: 1, duration: 100, color: color})
-			}
-
-			if (playerCollision)
-				vfx.add(pos, "damage", {size: 20, alpha: 1, duration: 1000, text: -1, color: color})
-
-			if (playerCollision)
-				game.rocket.integrity -= 1;
 		}
 	}
 

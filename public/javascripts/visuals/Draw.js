@@ -29,9 +29,11 @@ class Draw {
 		if (!player) {
 			return;
 		}
-		if (!player.alive) {
-			return;
-		}
+		//if (game.state == "replay" && serverRocket) {
+			if (!player.alive) {
+				return;
+			}
+		//}
 		// Draw the player
 		let rocket = game.rocket;
 		let zoom = camera.warp ? camera.mapZ : camera.zoom;
@@ -77,7 +79,7 @@ class Draw {
         style.drawRect(halfWidth, halfHeight, halfWidth, width, 0, player.color || "red");
         // Draw nose cone
         style.drawTriangle(0, -halfHeight - halfWidth, width, width, 0, player.color || "red");
-        if(detail) {
+        if (detail) {
 	        // Draw player window
 	        style.drawRoundedRect(0-width/4, -width, halfWidth, width, 3*zoom, "rgb(70, 70, 70)")
 	        // Draw thruster caps
@@ -179,9 +181,6 @@ class Draw {
 
 	drawPlanet(pos, radius, type, config) {
 
-		if (!config.color)
-			return;
-
 		let {style} = this;
 
 		let zoom = camera.warp ? camera.mapZ : camera.zoom;
@@ -196,7 +195,7 @@ class Draw {
 			glowWidth: 100*zoom
 		}
 
-		if ((camera.warp) && !util.inScreen(pos, false, radius, camera.pos)) {
+		if (camera.warp && !util.inScreen(pos, false, radius, camera.pos)) {
 			options.glow = false;
 			options.outline = false;
 		}
@@ -206,10 +205,12 @@ class Draw {
 		// Draw Planet
 		if (type == "planet") {
 			style.drawCircle(screenPos.x, screenPos.y, (radius - 5)*zoom, config.color, options);
-		} else if(type == "blackhole") {
+		} else if (type == "blackhole") {
 			style.drawCircle(screenPos.x, screenPos.y, radius*zoom, config.color, options);
 		}
 		ctx.restore();
+
+		style.drawText(config.name, screenPos.x, screenPos.y, radius/4*zoom + "px Arial", "white", "center", "middle", 1);
 	}
 
 	drawTurret(planet) {

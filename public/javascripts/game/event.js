@@ -13,6 +13,8 @@ window.averageTps = 0;
 let latencyArray = [];
 window.averageLatency = 0;
 
+let timeoutId = undefined;
+
 (function () {
 
 	window.socket = io("/");
@@ -35,6 +37,14 @@ window.averageLatency = 0;
         if (tpsArray.length > 100)
             tpsArray.shift();
         averageTps = tpsArray.reduce((a, b) => a + b, 0) / tpsArray.length;    
+
+        clearTimeout(timeoutId)
+        timeoutId = setTimeout(function () {
+        	if (game.state == "play") {
+        		console.error("Disconnected from server.")	
+        		game.rocket.endGame();
+        	}
+        }, 2000)
 	})
 
 	socket.on('playerDisconnect', function (id) { // Handles player disconnection on the client side

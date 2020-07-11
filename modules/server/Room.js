@@ -160,7 +160,9 @@ module.exports = class Room {
 			"didn't read the manual",
 			"can't be bothered to land"],
 			fuel: ["should have stopped for gas", 
-			"should have checked the fuel gage"]
+			"should have checked the fuel gage"],
+			edge: ["looked to far away", 
+			"flew to far out there"]
 		}
 
 		let msg = data.name + " " + messages[data.type][Util.randInt(0, messages[data.type].length-1)] + " [Stage " + (this.players[playerId].stage + 1) + "]";

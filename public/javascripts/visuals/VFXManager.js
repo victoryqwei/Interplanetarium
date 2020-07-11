@@ -13,9 +13,12 @@ class VFXManager {
 		this.newEffects = [];
 	}
 
-	add(pos, type, options, server) {
-		if (options.id != socket.id)
+	add(pos, type, options, server, replay) {
+		if ((options.id != socket.id || replay) && !server) {
 			this.effects.push(new VFX(pos, type, options));
+		} else if ((options.id != socket.id) && !replay && server) {
+			this.effects.push(new VFX(pos, type, options));
+		}
 
 		if (!server) {
 			options.id = socket.id;

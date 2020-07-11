@@ -9,7 +9,9 @@ import Rocket from "../player/Rocket.js";
 import Sound from "./Sound.js";
 import {vfx} from "../visuals/VFXManager.js";
 import {camera} from "../visuals/Camera.js";
+import {replay} from "../game/Replay.js";
 import {QuadTree, Rectangle, Point} from "../util/QuadTree.js"
+import Vector from "../util/Vector.js"
 
 class Game {
 	constructor() {
@@ -37,20 +39,23 @@ class Game {
 
 		this.log = [];
 
-		this.state = "menu"; // "menu", "play", "settings", "starmap"
+		this.state = "menu"; // "menu", "play", "replay"
 		this.loopId = undefined;
 
 		// Replay
-		this.replay = [];
+		this.replayData = [];
+		this.replayState = this;
 	}
 
 	update() {
-		this.updateScreen();
-
-		this.rocket.update();
-		this.sound.music();
+		if(this.state != "replay") {
+	
+			this.updateScreen();
+			this.rocket.update();
+			this.sound.music();
+		}
 		camera.update();
-
+		
 	}
 
 	start() { // Starts the game - This officially starts the game process
@@ -61,63 +66,31 @@ class Game {
 
 		// Client -> Server loop
 		this.loopId = setInterval(function () {
-			socket.emit('update', {
-				id: socket.id,
-				rocket: {
-					pos: rocket.pos,
-					vel: rocket.vel,
-					angle: rocket.angle,
-					integrity: rocket.integrity,
-					thrust: rocket.thrust,
-					alive: rocket.alive,
-					xp: rocket.xp
-				},
-				missiles: rocket.newMissiles,
-				effects: vfx.newEffects,
-			})
+			if (game.state != "replay") {
+				// Send data to server
+				socket.emit('update', {
+					id: socket.id,
+					rocket: {
+						pos: rocket.pos,
+						vel: rocket.vel,
+						angle: rocket.angle,
+						integrity: rocket.integrity,
+						thrust: rocket.thrust,
+						alive: rocket.alive,
+						xp: rocket.xp
+					},
+					missiles: rocket.newMissiles,
+					effects: vfx.newEffects,
+				});
 
-			/*// Replay
-			if(game.planets && game.map) {
+				// Replay
+				replay.update();
 
-				// Add rocket
-				let replayRocket = {
-					pos: rocket.pos,
-					vel: rocket.vel,
-					angle: rocket.angle,
-				}
+				// Reset event variables
+				rocket.newMissiles = [];
+				vfx.newEffects = [];
 
-				// Add planets
-				let replayPlanets = [];
-
-				for (let id in game.map.planets) {
-					let p = game.map.planets[id]
-
-					// Add turrets
-					let replayTurrets = [];
-
-					for (let id in p.turrets) {
-						let t = p.turrets[id]
-						replayTurrets.push({
-							pos: t.pos,
-							angle: t.angle,
-							barrelHeading: t.barrelHeading,
-						});
-					}
-
-					replayPlanets.push({
-						pos: p.pos,
-						radius: p.radius
-					});
-				}
-
-				let replay = {
-					rocket: replayRocket,
-					planets: replayPlanets
-				}
-			}*/
-
-			rocket.newMissiles = [];
-			vfx.newEffects = [];
+			}
 		}, tick)
 
 		this.state = "play";
@@ -126,6 +99,13 @@ class Game {
 	}
 
 	clear() {
+		
+		// Return to menu game state
+		$("#title").show();
+		this.state = "menu";
+		this.rocket.alive = true;
+		socket.emit('leaveRoom')
+
 		// Player data
 		this.rocket = new Rocket();
 
@@ -150,11 +130,11 @@ class Game {
 		roomId = undefined;
 
 		clearInterval(this.loopId);
+
+		camera.starOffset = Vector.add(Vector.add(this.rocket.pos, camera.offset), Vector.sub(camera.starOffset, camera.pos.copy()));
 	}
 
 	updateScreen() {
-		//if(game.map)
-			//console.log(game.map.planets)
 		if (!this.mapQ)
 			return;
 
@@ -178,6 +158,8 @@ class Game {
 	}
 
 	receivePlayerData(players) {
+		if (game.state == "replay")
+			return;
 
 		// Receive and update player information
 		for (let id in players) {
@@ -212,7 +194,7 @@ class Game {
 	}
 
 	receiveMapData(map) {
-		if (!this.map)
+		if (!this.map || camera.warp || game.state == "replay")
 			return;
 		// Create map quadtree
 		this.mapQ = new QuadTree(new Rectangle(0, 0, this.map.mapRadius, this.map.mapRadius), 4)
@@ -281,6 +263,8 @@ class Game {
 		// Warp to level location
 		camera.warp = true;
 		camera.mapZ = 0.00001;
+
+		vfx.effects = [];
 
 		this.rocket.respawn(true);
 	}

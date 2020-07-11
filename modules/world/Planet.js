@@ -11,7 +11,7 @@ var Base = require('./Base.js')
 var {QuadTree, Rectangle, Point} = require('../util/QuadTree.js');
 
 module.exports = class Planet {
-	constructor(x, y, mass, radius, type, name = "Planet", color = "#c1440e", id) {
+	constructor(x, y, mass, radius, type, name = "Planet", color = "#c1440e", id, stage) {
 		// Position
 		this.pos = new Vector(x, y);
 
@@ -34,9 +34,9 @@ module.exports = class Planet {
 		this.bases = {};
 
 		// Set turret and base levels
-		let turretCount = Function.randInt(3, 20);
-		let baseCount = 1;
-		let turretLevel = Function.randInt(1, 3);
+		let turretCount = Function.randInt(6, Math.min(Math.ceil(stage*5) + 6, 30));
+		let baseCount = Function.randInt(0, Math.min(Math.ceil(stage/2), 3));
+		
 		
 		// Spawn turrets and bases
 		if (this.type != "blackhole") {
@@ -54,10 +54,12 @@ module.exports = class Planet {
 
 				if (!collision) {
 					let id = Function.randomString(5);
-					let base = new Base(this, randAngle, turretLevel, id)
+					let baseLevel = Function.randInt(1, Math.min(Math.ceil(stage/2), 3));
+					let base = new Base(this, randAngle, baseLevel, id)
 					this.bases[id] = base;
 				}
 			}
+
 			for (let i = 0; i < turretCount; i++) {
 				let randAngle = Function.random(0, 2*Math.PI);
 				let spawnVector = Vector.rotate(new Vector(this.radius, 0), randAngle);
@@ -79,6 +81,7 @@ module.exports = class Planet {
 
 				if (!collision) {
 					let id = Function.randomString(5);
+					let turretLevel = Function.randInt(1, Math.min(Math.ceil(stage/2), 3));
 					let turret = new Turret(this, randAngle, turretLevel, id)
 					this.turrets[id] = turret;
 				}

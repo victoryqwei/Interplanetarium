@@ -35,7 +35,11 @@ class Star {
 		let pos = Vector.sub(camera.pos, camera.starOffset);
 
 		if (camera.warp) {
-			this.z -= delta*(1 - Math.abs(util.constrain(tick/1000, 0, 1) - 0.5) * 2)*3; // Move the stars closer towards the screen
+			if (camera.backWarp) {
+				this.z += delta*(1 - Math.abs(util.constrain(tick/1000, 0, 1) - 0.5) * 2)*3; // Move the stars closer towards the screen
+			} else {
+				this.z -= delta*(1 - Math.abs(util.constrain(tick/1000, 0, 1) - 0.5) * 2)*3; // Move the stars closer towards the screen
+			}
 		} else if (game.state == "menu") {
 			this.z -= delta/30;
 		}
@@ -66,6 +70,13 @@ class Star {
 			this.px = [this.x];
 			this.y = util.random(-canvas.height, canvas.height)+pos.y/starDistance;
 			this.py = [this.y];
+		} else if (this.z > canvas.width) {
+			this.z = 1;
+			this.pz = [1];
+			this.x = util.random(-canvas.width, canvas.width)+pos.x/starDistance;
+			this.px = [this.x];
+			this.y = util.random(-canvas.height, canvas.height)+pos.y/starDistance;
+			this.py = [this.y];
 		}
 
 		// Determine the position of the star on the screen
@@ -90,7 +101,7 @@ class Star {
 
 		// Stores the previous positions of the star
 		let starLength = (1 - Math.abs(util.constrain(tick/1000, 0, 1) - 0.5) * 2) * 20;
-		let warpLength = camera.warp ? 1000/delta/144 * starLength : 1;
+		let warpLength = camera.warp ? 1000/delta/144 * starLength : 0;
 
 		camera.warpPerc = Math.abs(util.constrain(tick/1000, 0, 1));
 
@@ -134,12 +145,24 @@ export default class Stars {
 
 	animateWarp() {
 		if (camera.warp) {
-			if (camera.mapZ >= camera.minZoom) {
-				camera.mapZ = camera.minZoom;
-				camera.warp = false;
+			if (camera.backWarp) {
+				if (camera.mapZ <= 0.00001) {
+					camera.mapZ = 0.00001;
+					camera.warp = false;
+					camera.backWarp = false;
+					game.clear();
+				} else {
+					this.t += delta/3;
+					camera.mapZ = camera.zoom / Math.pow(1.01, this.t);
+				}
 			} else {
-				this.t += delta/3;
-				camera.mapZ = 0.00001 * Math.pow(1.01, this.t);
+				if (camera.mapZ >= camera.minZoom) {
+					camera.mapZ = camera.minZoom;
+					camera.warp = false;
+				} else {
+					this.t += delta/3;
+					camera.mapZ = 0.00001 * Math.pow(1.01, this.t);
+				}
 			}
 		} else {
 			this.t = 0;
