@@ -29,7 +29,6 @@ export default class Rocket {
 		// Orientation data
 		this.heading = new Vector(1, 0);
 		this.angle = 0;
-		this.angularVelocity = 0;
 		this.angleFromPlanet = 0;
 
 		// Forces
@@ -43,7 +42,6 @@ export default class Rocket {
 		// Rocket integrity
 		this.integrity = 100;
 		this.maxIntegrity = this.integrity;
-
 		this.alive = true;
 
 		// Missiles
@@ -372,7 +370,6 @@ export default class Rocket {
 
 			this.pos = this.prevPos.copy(); // Set position as one from previous frame
 			this.vel = new Vector(); // Velocity becomes 0
-			this.angularVelocity = 0; // Angular velocity becomes 0
 
 			// Check if rocket is still in planet
 			if (util.circleCollidesRect(p, this)) {

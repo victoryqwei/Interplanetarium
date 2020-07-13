@@ -36,12 +36,14 @@ export default class Animate {
 	}
 
 	animateBackground() {
+		// Draw the off-black background
 		let {style} = this;
 		ctx.clearRect(0, 0, canvas.width, canvas.height)
 		style.drawRectangle(0, 0, canvas.width, canvas.height, "#000408")
 	}
 
 	animateBorder() {
+		// Draw the map border
 		let {style} = this;
 
 		if (!game.map)
@@ -50,6 +52,7 @@ export default class Animate {
 		if (!game.rocket)
 			return;
 
+		// Draw the fade to black close to blackhole
 		let zoom = camera.warp ? camera.mapZ : camera.zoom;
 		var originPos = util.getScreenPos(new Vector(), zoom, camera.pos);
 		if (!camera.warp && game.rocket.closestPlanet) {
@@ -68,14 +71,17 @@ export default class Animate {
 	}
 
 	animateStars() {
+		//Animate the star warp
 		this.stars.animate(game.rocket);
 	}
 
 	animateRocket() {
+		// Draw the game rocket
 		draw.drawRocket(game.rocket, false, true, game.rocket.name, true);
 	}
 
 	animatePlayers() {
+		// Draw the players rockets
 		for (let id in game.players) {
 			if (id != socket.id) {
 				if(camera.warp) {
@@ -88,6 +94,7 @@ export default class Animate {
 	}
 
 	animatePlanets() {
+		// Draw the planets
 		if (!game.map)
 			return;
 		for (let id in game.screen.planets) {
@@ -104,7 +111,7 @@ export default class Animate {
 	}
 
 	animateMissiles() {
-
+		// Draw the missiles
 		let {style} = this;
 
 		if (camera.warp)
@@ -113,6 +120,7 @@ export default class Animate {
 		let zoom = camera.zoom;
 		let rocket = game.rocket;
 
+		// Update missiles
 		for (let i = game.missiles.length-1; i >= 0; i--) {
 			let m = game.missiles[i];
 
@@ -129,13 +137,14 @@ export default class Animate {
 
 			if (game.state != "replay") {
 
+				// Add laser missles
 				if (m.type == "laser") {
 					let deltaPos = Vector.mult(m.heading, t)
 					deltaPos.mult(m.speed);
 					pos.add(deltaPos);
 				}
 
-				// Seeking missile
+				// Add seeking missiles
 				if (m.type == "seeking" && util.getDistance(m.pos, rocket.pos) < 1000) {
 					let target = Vector.normalize(Vector.sub(rocket.pos, pos))
 					m.acc = target;
@@ -145,8 +154,8 @@ export default class Animate {
 					m.angle = Math.atan2(target.y, target.x)
 				}
 
+				// Add the positions
 				pos.add(Vector.mult(m.vel, t/1000));
-
 				game.missiles[i].realPos = pos.copy();
 			}
 
@@ -161,12 +170,11 @@ export default class Animate {
 				let playerCollision = m.id != socket.id && util.getDistance(rocket.pos.x, rocket.pos.y, pos.x, pos.y) < 40 && rocket.alive;
 				let planetCollision = false;
 
+				// Detect planet collision
 				for (let id in game.screen.planets) {
 					let planet = game.screen.planets[id];
-
 					if (util.getDistance(planet.pos.x, planet.pos.y, pos.x, pos.y) < planet.radius)
 						planetCollision = true;
-
 					for (let id in planet.bases) {
 						let base = planet.bases[id];
 						if (util.getDistance(base.pos.x, base.pos.y, pos.x, pos.y) < base.radius)
@@ -174,10 +182,12 @@ export default class Animate {
 					}
 				}
 
+				// Add vfx explosion at collision
 				if (playerCollision || planetCollision) {
 					vfx.add(pos, "explosion", {size: 10, alpha: 1, duration: 100, color: color}, false, false)
 				}
 
+				// Add vfx at player collosion
 				if (playerCollision) {
 					vfx.add(pos, "damage", {size: 20, alpha: 1, duration: 1000, text: -(m.damage || 1), color: color}, false, false)
 					game.rocket.integrity -= m.damage;
@@ -187,21 +197,20 @@ export default class Animate {
 							turretId: m.turretId,
 							missileId: m.missileId
 						};
-
 						vfx.add(pos, "explosion", {size: 100, alpha: 1, duration: 200}, false, false)
 					}
-					
 				}
 
+				// Remove missile if too old
 				if (old || playerCollision || planetCollision) {
 					game.missiles.splice(i, 1)
 				}
-
 			}
 		}
 	}
 
 	animateVfx() {
+		// Animate the vfx
 		vfx.animate();
 	}
 }

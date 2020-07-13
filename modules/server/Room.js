@@ -11,6 +11,7 @@ TODO:
 var Map = require('../world/Map.js');
 var Planet = require('../world/Planet.js');
 var Util = require('../util/Util.js');
+var Bot = require('./Bot.js');
 
 var {QuadTree, Rectangle, Point} = require('../util/QuadTree.js');
 
@@ -22,6 +23,11 @@ module.exports = class Room {
 
 		// Players
 		this.players = {};
+
+		/*for (let i = 0; i < 10; i++) {
+			let botId = Util.randomString(10)
+			this.players[botId] = new Bot(botId, 3000);
+		}*/
 
 		// Map
 		this.stages = [];
@@ -54,16 +60,11 @@ module.exports = class Room {
 
 	// Update players in each stage
 	updatePlayers() {
-		/*for (let id in this.players) {
-			let p = this.players[id];
-			if (!p.rocket)
-				 continue;
-
-			let stageXp = p.stage*100+100;
-			if (p.rocket && p.rocket.xp >= stageXp) {
-				this.nextStage(id);
+		for (let id in this.players) {
+			if (this.players[id].type == "bot" && this.players[id] instanceof Bot) {
+				this.players[id].update(this.stages[this.players[id].stage]);
 			}
-		}*/
+		}
 	}
 
 	// Create new level
@@ -77,7 +78,9 @@ module.exports = class Room {
 			return;
 
 		this.players[playerId].stage += 1;
-		console.log(this.players[playerId].name, "has moved to stage", this.players[playerId].stage + 1)
+		let msg = this.players[playerId].name + " has moved to stage " + (this.players[playerId].stage + 1);
+		console.log(msg)
+		this.newLog.push(msg);
 		this.io.to(playerId).emit("levelData", this.stages[this.players[playerId].stage]);
 
 		for (let id in this.players) {

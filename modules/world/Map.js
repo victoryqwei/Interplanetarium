@@ -178,7 +178,7 @@ module.exports = class Map {
 				}
 			}
 
-			let old = Date.now() - m.time > 1000;
+			let old = Date.now() - m.time > 1000/m.speed;
 			if (old || collision) {
 				this.missiles.splice(i, 1);
 			}

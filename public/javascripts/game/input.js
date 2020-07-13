@@ -9,7 +9,6 @@ import {game} from "./Game.js";
 import {util} from "../util/Util.js";
 export let input = {};
 import {camera} from "../visuals/Camera.js";
-
 window.username = "Player" + util.randInt(1000, 9999);
 
 // Keyboard events
@@ -58,8 +57,3 @@ $(window).bind('mousewheel', function(event) {
         camera.zoom = Math.max(camera.zoom-delta/100, camera.minZoom);
     }
 });
-
-/*// Leave tab event
-$(window).blur(function() {
-  alert("You have been disconnected from the server.");
-});*/

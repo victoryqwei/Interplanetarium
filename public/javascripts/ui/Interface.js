@@ -15,6 +15,7 @@ import {images} from "../world/assets.js";
 export default class UI {
 	constructor() {
 
+		// Define interface
 		this.style = new Style(ctx);
 		this.interfaceHeight = 100;
 		this.interfaceWidth = 250;
@@ -43,8 +44,8 @@ export default class UI {
 	}
 
 	drawFade() {
+		// Draw the fade to black for transitions
 		let {style} = this;
-
 		let time = Date.now() - game.rocket.deathTick;
 		let alpha = 0;
 
@@ -65,20 +66,25 @@ export default class UI {
 	}
 
 	drawMenu() {
+		// Draw the main menu of the game
 		let {style} = this;
 		let width = canvas.width/4;
 		let subWidth = canvas.width/20;
+		let opacity = Math.min(game.sound.beatOpacity+0.6, 1);
 
 		// Draw menu
+		ctx.globalAlpha = opacity;
 		style.drawImage(images.title, canvas.width/2, canvas.height/4, width, width/3.7);
 		style.drawImage(images.launch, canvas.width/2, canvas.height/1.4, subWidth, subWidth/3.7);
 
 		let cursor = Date.now() % 1000 > 500 ? "|" : ""
-		style.drawText(window.username + cursor, canvas.width/2 + (cursor.length > 0 ? 9 : 0), canvas.height/1.9, "70px Arial", "white", "center", "middle", 1);
-		style.drawText("Created by Victor Wei and Evan Cowan", canvas.width/2, canvas.height - 20, "bold 15px Arial", "white", "center", "middle", 1);
+		style.drawText(window.username + cursor, canvas.width/2 + (cursor.length > 0 ? 9 : 0), canvas.height/1.9, "70px Arial", "white", "center", "middle", opacity);
+		style.drawText("Created by Victor Wei and Evan Cowan", canvas.width/2, canvas.height - 20, "bold 15px Arial", "white", "center", "middle", opacity);
+		ctx.globalAlpha = 1;
 	}
 
 	drawWarpText() {
+		// Draw the hyperjump text for the player
 		let {style} = this;
 
 		// Stats
@@ -87,17 +93,35 @@ export default class UI {
 	}
 
 	drawStats() {
+		// Draw the stats of the game in the top left
 		let {style} = this;
 		let rocket = game.rocket;
 
-		// Stats
-		style.drawText("FPS: " + averageFps.toFixed(2), 20, 30, "20px Arial", "white", "left", "middle", 1);
-		style.drawText("TPS: " + averageTps.toFixed(1) + " | 30.0", 20, 60, "20px Arial", "white", "left", "middle", 1);
-		style.drawText("Latency: " + averageLatency.toFixed(0) + "ms", 20, 90, "20px Arial", "white", "left", "middle", 1);
-		style.drawText("G-Force: " + game.rocket.gForce.toFixed(1), 20, 120, "20px Arial", "white", "left", "middle", 1);
-		style.drawText("Acceleration: " + game.rocket.acc.getMag().toFixed(1), 20, 150, "20px Arial", "white", "left", "middle", 1);
-		style.drawText("Velocity: " + game.rocket.vel.getMag().toFixed(1), 20, 180, "20px Arial", "white", "left", "middle", 1);
+		let spacing = 6
+		let padding = 20;
 
+		// Draw fps
+		let fps = maxFps / averageFps;
+		style.drawRoundedRect(padding + spacing*2.5 - padding*1.6/2, padding - (padding*fps - padding), padding*1.6, padding*fps, 4, "#cfcfcf", {fill: true});
+		style.drawRoundedRect(padding + spacing*2.5 - padding*1.6/2, padding, padding*1.6, padding, 4, "white", {fill: false, outline: true, outlineWidth: 4, outlineColor: "white"})
+		style.drawText(averageFps.toFixed(0), padding + spacing*2.5, padding*2+9, "bold 20px Arial", "white", "center", "top", 1);
+
+		// Draw latency
+		let latency = Math.max(5-(averageLatency/20), 0);
+		style.drawRectangle(padding + spacing*0, padding*4+20, 5, 5, "rgba(255, 255, 255, " + Math.max(latency+1, 0) + ")");
+		style.drawRectangle(padding + spacing*1, padding*4+15, 5, 10, "rgba(255, 255, 255, " + Math.max(latency, 0) + ")");
+		style.drawRectangle(padding + spacing*2, padding*4+10, 5, 15, "rgba(255, 255, 255, " + Math.max(latency-1, 0) + ")");
+		style.drawRectangle(padding + spacing*3, padding*4+5, 5, 20, "rgba(255, 255, 255, " + Math.max(latency-2, 0) + ")");
+		style.drawRectangle(padding + spacing*4, padding*4, 5, 25, "rgba(255, 255, 255, " + Math.max(latency-3, 0) + ")");
+		style.drawText(averageLatency.toFixed(0), padding + spacing*2.5, padding*5+9, "bold 20px Arial", "white", "center", "top", 1);
+
+		// Draw tps
+		let tps = averageTps / 30;
+		style.drawCircle(padding + spacing*2.5, padding*7.9, padding/1.5, "white", {outline: true, fill: false, outlineColor: "white", outlineWidth: 7});
+		style.drawCircle(padding + spacing*2.5, padding*7.9, padding/1.5, "white", {outline: true, fill: false, outlineColor: tps > 1 ? "red" : "lime", outlineWidth: 7}, tps > 1 ? Math.PI*1.5 - (Math.PI*(1-tps)) : Math.PI*1.5, tps > 1 ? Math.PI*1.5 : Math.PI*1.5 - (Math.PI*(1-tps)));
+		style.drawText(averageTps.toFixed(0), padding + spacing*2.5, padding*9, "bold 20px Arial", "white", "center", "top", 1);
+
+		// Stage and lives
 		if (game.map && !camera.warp) {
 			style.drawText("STAGE", canvas.width - 65, 40, "bold 20px Arial", "white", "center", "middle", 1);
 			style.drawText(game.map.stage + 1, canvas.width - 65, 80, "bold 55px Arial", "white", "center", "middle", 1);
@@ -105,6 +129,7 @@ export default class UI {
 			style.drawText(game.rocket.lives, canvas.width - 65, 160, "bold 55px Arial", "white", "center", "middle", 1);
 		}
 
+		// Collision warning
 		if (rocket.mortalCourse) {
 			style.drawWarning(canvas.width/2, canvas.height/4, 110, 100, 0, "red", 0.5);
 			style.drawText("WARNING", canvas.width/2, canvas.height/4 + 100, "bold 50px Arial", "red", "center", "middle", 0.8);
@@ -114,16 +139,15 @@ export default class UI {
 	}
 
 	drawLog() {
-
+		// Draw the game log used for player death events
 		let {style} = this;
-
-		// Draw game log
 		for (var i = 0; i < game.log.length; i++) {
 			style.drawText(game.log[i], canvas.width - 20, canvas.height - 20 - 25*i, "20px Arial", "white", "right", "middle", 1);
 		}
 	}
 
 	drawDeath() {
+		// Draw the countdown timer and replay edge effects
 		if (camera.warp)
 			return;
 

@@ -28,9 +28,9 @@ export default class Dashboard {
 	constructor() {
 		this.style = new Style(htx);
 
+		// Dashbaord sizing
 		this.spacing = 75;
 		this.padding = 22;
-
 		this.xp = 0;
 		this.prevXp = 0;
 		this.xpDelay = 0;
@@ -71,7 +71,6 @@ export default class Dashboard {
 		// Animate XP bar
 		let xpHeight = 12;
 		let xpWidth = 400 - leftTextWidth - rightTextWidth - 10;
-
 		let stageXp = game.map.stage*100+100;
  		let xpProgress = Math.min((game.rocket.xp/stageXp), 1);
 
@@ -87,8 +86,8 @@ export default class Dashboard {
  			this.xp -= (0.05*Math.min(this.xpDelta/this.xp, 2))*delta;
  		}
 
+ 		// Draw XP bar
 		if (xpProgress >= 1) { 
-			// Full XP Bar
 			style.drawRectangle(hanvas.width/2 - 200 + leftTextWidth, 8, xpWidth, xpHeight, "lime", {alpha: 1});
 		} else {
 			style.drawRectangle(hanvas.width/2 - 200 + leftTextWidth, 8, xpWidth, xpHeight, "white", {alpha: 0.2});
@@ -96,9 +95,10 @@ export default class Dashboard {
 			style.drawRectangle(hanvas.width/2 - 200 + xpWidth*xpProgress - this.xp + leftTextWidth, 8, this.xp, xpHeight, "lime", {alpha: 1});
 		}
 
+		// Reset XP
 		this.fullXp = xpProgress >= 1;
 
-		// Animate VITALS
+		// Animate vitals
 		let vitalHeight = 100;
 		let heightDiff = hanvas.height - vitalHeight;
 
