@@ -141,9 +141,9 @@ export default class Rocket {
 			if (!this.alive || game.state == "replay")
 				this.respawn();
 
-			if (keys[16]) { // Shift + R
+			/*if (keys[16]) { // Shift + R
 				this.respawn();
-			}
+			}*/
 		} else {
 			this.respawnFlag = false;
 		}
