@@ -26,7 +26,6 @@ util.dragElement(document.getElementById("minimap-container"));
 export default class Minimap {
 	constructor() {
 		this.style = new Style(mtx);
-
 		this.radarDistance = 4000;
 	}
 
@@ -44,7 +43,6 @@ export default class Minimap {
 			planets: {},
 			players: {}
 		}
-
 		let zoom = camera.zoom;
 		let rocket = game.rocket;
 
@@ -54,6 +52,7 @@ export default class Minimap {
 			range = new Rectangle(0, 0, game.map.mapRadius, game.map.mapRadius);
 		let points = game.mapQ.query(range);
 
+		// Update points
 		for (let p of points) {
 			game.radar.planets[p.data.id] = p.data;
 		}
@@ -63,9 +62,9 @@ export default class Minimap {
 		if (!game.map || game.state != "play" || camera.warp)
 			return;
 
+		// Clear canvas
 		let {style} = this;
 		let rocket = game.rocket;
-
 		mtx.clearRect(0, 0, manvas.width, manvas.height);
 
 		// Draw background 
@@ -73,8 +72,8 @@ export default class Minimap {
 			alpha: 0.1
 		})
 
+		// Draw the planets
 		this.scale = this.radarDistance/manvas.height;
-
 		for (let id in game.radar.planets) {
 			let p = game.radar.planets[id];
 			// Draw on the minimap

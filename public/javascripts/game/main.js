@@ -13,7 +13,6 @@ import {util} from "../util/Util.js";
 
 (function () {
 
-
 	// Initialize classes
 	var animate = new Animate();
 	var ui = new UI();
@@ -48,7 +47,9 @@ import {util} from "../util/Util.js";
 	var interval = 1000/fps;
 	window.delta = 0;
 	var fpsArray = [];
+	var maxFpsArray = [];
 	window.averageFps = 0;
+	window.maxFps = 0;
 	
 	function loop() {
 	    requestAnimationFrame(loop);
@@ -64,11 +65,17 @@ import {util} from "../util/Util.js";
 	        draw();
 
 	    	// Get average frames per second with a 30 frame buffer
-	        fpsArray.push(1000/delta);
+	    	let fps = 1000/delta;
+	        fpsArray.push(fps);
+	        maxFpsArray.push(fps);
 	        if (fpsArray.length > 300) {
 	            fpsArray.shift();
 	        }
+	        if (maxFpsArray.length > 30) {
+	            maxFpsArray.shift();
+	        }
 	        averageFps = fpsArray.reduce((a, b) => a + b, 0) / fpsArray.length;
+	        maxFps = maxFpsArray.reduce((a, b) => a + b, 0) / maxFpsArray.length;
 	    }
 	}
 	

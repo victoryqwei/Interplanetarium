@@ -48,14 +48,13 @@ class Game {
 	}
 
 	update() {
-		if(this.state != "replay") {
+		if (this.state != "replay") {
 	
 			this.updateScreen();
 			this.rocket.update();
-			this.sound.music();
 		}
+		this.sound.music();
 		camera.update();
-		
 	}
 
 	start() { // Starts the game - This officially starts the game process
@@ -94,8 +93,6 @@ class Game {
 		}, tick)
 
 		this.state = "play";
-
-
 	}
 
 	clear() {
@@ -126,11 +123,8 @@ class Game {
 
 		this.state = "menu"; // "menu", "play", "settings", "starmap"
 		camera.warp = false;
-
 		roomId = undefined;
-
 		clearInterval(this.loopId);
-
 		camera.starOffset = Vector.add(Vector.add(this.rocket.pos, camera.offset), Vector.sub(camera.starOffset, camera.pos.copy()));
 	}
 
@@ -152,6 +146,7 @@ class Game {
 			range = new Rectangle(0, 0, this.map.mapRadius, this.map.mapRadius);
 		let points = this.mapQ.query(range);
 
+		// Update
 		for (let p of points) {
 			this.screen.planets[p.data.id] = p.data;
 		}
@@ -241,9 +236,7 @@ class Game {
 
 	receiveLevelData(data) {
 		this.players = {};
-
 		this.map = data;
-
 		this.rocket.xp = 0;
 
 		// Create map quadtree
@@ -267,20 +260,22 @@ class Game {
 		vfx.effects = [];
 
 		this.rocket.respawn(true);
+		this.rocket.lives = Math.min(3, this.rocket.lives + 1);
 	}
 
 	receiveLogData(data) {
 
+		// Update log data
 		for (let msg of data) {
 			this.log.push(msg);
 			setTimeout(function(){ 
 				game.log.splice(0, 1);
 			}, 5000)
 		}
-		
 	}
 
 	sendLog(type) {		
+		// Send server new log data
 		socket.emit("serverLog", {
 			name: this.rocket.name,
 			type: type

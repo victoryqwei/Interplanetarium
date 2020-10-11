@@ -29,7 +29,7 @@ class Star {
 	animate(rocket, qTree, tick) {
 		let keys = input.keys;
 
-		let starDistance = 10;
+		let starDistance = 100;
 		let dz = camera.zoom;
 
 		let pos = Vector.sub(camera.pos, camera.starOffset);

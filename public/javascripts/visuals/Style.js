@@ -70,7 +70,7 @@ export default class Style {
 	    ctx.restore();
 	}
 
-	drawCircle(x, y, r, c, options) {
+	drawCircle(x, y, r, c, options, arc, start) {
 		let {ctx} = this;
 
 		if (!options)
@@ -78,7 +78,7 @@ export default class Style {
 
 		ctx.save();
 		ctx.beginPath();
-		ctx.arc(x, y, r, 0, 2 * Math.PI, false);
+		ctx.arc(x, y, r, start || 0, arc || 2 * Math.PI, false);
 	    ctx.fillStyle = c || 'red';
 	    ctx.globalAlpha = options.alpha || 1;
 	    if (options.glow)
@@ -160,7 +160,12 @@ export default class Style {
 	    ctx.quadraticCurveTo(x, y, x+r, y);
 	    ctx.fillStyle = c || 'grey';
 		ctx.globalAlpha = options.alpha || 1;
+		ctx.strokeStyle = options.outlineColor || "black";
+		ctx.lineWidth = options.outlineWidth || 1;
+		if (options.fill == undefined || options.fill)
 			ctx.fill();
+		if (options.outline)
+	    	ctx.stroke();
 		ctx.globalAlpha = 1;
 	}
 	

@@ -1,3 +1,10 @@
+
+/*
+
+The replay feature of the game. Used for the death recapture events.
+
+*/
+
 import Rocket from "../player/Rocket.js";
 import Sound from "./Sound.js";
 import {vfx} from "../visuals/VFXManager.js";
@@ -238,17 +245,3 @@ class Replay {
 }
 
 export let replay = new Replay();
-
-/*if (rocket.pos instanceof Vector) {
-	rocket.pos = Ola({
-		x: data.rocket.pos.x,
-		y: data.rocket.pos.y
-	}, 100)
-	rocket.intAngle = Ola(data.rocket.angle, 100);
-} else {
-	rocket.pos.x = data.rocket.pos.x;
-	rocket.pos.y = data.rocket.pos.y;
-	rocket.intAngle.value = data.rocket.angle;
-	rocket.angle = rocket.intAngle.value;
-	rocket.alive = data.rocket.alive;
-}*/

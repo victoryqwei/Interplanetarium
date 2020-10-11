@@ -29,15 +29,14 @@ class Draw {
 		if (!player) {
 			return;
 		}
-		//if (game.state == "replay" && serverRocket) {
-			if (!player.alive) {
-				return;
-			}
-		//}
+
+		if (!player.alive) {
+			return;
+		}
+
 		// Draw the player
 		let rocket = game.rocket;
 		let zoom = camera.warp ? camera.mapZ : camera.zoom;
-
 		let width = (player.width || rocket.width) * zoom;
 		let height = (player.height || rocket.height) * zoom;
 		let pos = util.getScreenPos(player.pos, zoom, camera.pos);
@@ -192,7 +191,8 @@ class Draw {
 			outlineColor: util.shadeColor(config.color, -20),
 			glow: true,
 			glowColor: config.color,
-			glowWidth: 100*zoom
+			glowWidth: 100*zoom*util.constrain(game.sound.beatOpacity + 0.4, 0, 1),
+			shadowAlpha: game.sound.beatOpacity
 		}
 
 		if (camera.warp && !util.inScreen(pos, false, radius, camera.pos)) {
@@ -303,4 +303,4 @@ class Draw {
 	}
 }
 
-export let draw = new Draw();
+export let draw = new Draw

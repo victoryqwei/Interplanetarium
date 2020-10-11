@@ -21,6 +21,7 @@ export default class Sound {
 		    progressColor: 'purple'
 		});
 
+		// Setup the music
 		this.setup();
 
 	}
@@ -31,7 +32,7 @@ export default class Sound {
 		let {wavesurfer, segments} = this;
 
 		// Load music
-		//wavesurfer.load('./sounds/music.wav');
+		wavesurfer.load('./sounds/music.mp3');
 
 		// On music loaded
 		wavesurfer.on('ready', function () {
@@ -50,12 +51,14 @@ export default class Sound {
 	}
 
 	music() {
-		if (this.segments.length == 0 || game.state == "play" || !this.beatDetection)
+
+		if (this.segments.length == 0 || !this.beatDetection)
 			return;
 
+		// Define wavesurfer and beat samples
 		var {wavesurfer} = this;
 		let downbeat = this.segments[Math.round(2048 * wavesurfer.backend.getPlayedPercents())*2];
-		let threshold = 0.25;
+		let threshold = 0.2;
 
 		// Beat detection
 		if(downbeat > this.beat + threshold) {
@@ -69,11 +72,5 @@ export default class Sound {
 		if(this.beatOpacity > 0.2) {
 			this.beatOpacity -= 0.0007 * delta
 		}
-
-		// Update opacity on menu
-		let title = document.getElementById("title-text");
-		title.style.opacity = Math.min(this.beatOpacity + 0.6, 1);
-		let subtitle = document.getElementById("subtitle-text");
-		subtitle.style.opacity = Math.min(this.beatOpacity + 0.6, 1);
 	}
 }

@@ -13,26 +13,30 @@ window.roomId = undefined;
 
 (function () {
 
-
+	// Start the game
 	function startGame() {
+		// Make sure page has loaded
 		if (document.readyState != "complete")
 			return;
-		
-		$("#title").hide();
+
+		// Emit to server
 		if (!roomId && !game.map) {
-			let id = window.location.pathname.replace("/", "") /*|| randomString(7)*/;
+			let id = window.location.pathname.replace("/", "");
 			console.log("Establishing connection to server: [" + id + "]");
 			let username = window.username;
+
+			// Emit
 			socket.emit("joinRoom", {
 				id: id,
 				name: username
 			});
 
+			// Set username
 			game.rocket.name = username;
-
 			roomId = id;
 			camera.warp = true;
 
+			// Set cookies
 			setCookie();
 
 			// Start the game
@@ -65,8 +69,6 @@ window.roomId = undefined;
 				let exdays = 365;
 				util.setCookie(cname,cvalue,exdays);
 			}
-		} else {
-		   //alert("Please only use alphanumeric characters without spaces!"); 
 		}
 	}
 
@@ -96,6 +98,7 @@ window.roomId = undefined;
 		}
 	})
 
+	// Make sure username is only alphanumaric
 	function alphaOnly(key) {
 	   return ((key >= 48 && key <= 90));
 	};
